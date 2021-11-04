@@ -1,6 +1,6 @@
 module github.com/wealdtech/probed
 
-go 1.18
+go 1.17
 
 require (
 	cloud.google.com/go/secretmanager v1.0.0 // indirect
