@@ -23,6 +23,22 @@ type BlockDelaysSetter interface {
 	SetBlockDelay(ctx context.Context, blockDelay *BlockDelay) error
 }
 
+// BlockDelaysProvider defines functions to obtain block delays.
+type BlockDelaysProvider interface {
+
+	// MedianBlockDelays obtains the median block delays for a range of slots.
+	MedianBlockDelays(ctx context.Context,
+		locationID uint16,
+		sourceID uint16,
+		method string,
+		fromSlot uint32,
+		toSlot uint32,
+	) (
+		[]*MedianBlockDelay,
+		error,
+	)
+}
+
 // Service defines a minimal probe database service.
 type Service interface {
 	// BeginTx begins a transaction.

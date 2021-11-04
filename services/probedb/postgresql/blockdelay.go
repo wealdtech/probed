@@ -15,7 +15,10 @@ package postgresql
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/wealdtech/probed/services/probedb"
 )
 
@@ -64,4 +67,81 @@ SET f_delay = excluded.f_delay
 	}
 
 	return err
+}
+
+// MedianBlockDelays obtains the median block delays for a range of slots.
+func (s *Service) MedianBlockDelays(ctx context.Context,
+	locationID uint16,
+	sourceID uint16,
+	method string,
+	fromSlot uint32,
+	toSlot uint32,
+) (
+	[]*probedb.MedianBlockDelay,
+	error,
+) {
+	tx := s.tx(ctx)
+	if tx == nil {
+		ctx, cancel, err := s.BeginTx(ctx)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to begin transaction")
+		}
+		tx = s.tx(ctx)
+		defer cancel()
+	}
+
+	// Build the query.
+	queryBuilder := strings.Builder{}
+	queryVals := make([]interface{}, 2)
+
+	queryVals[0] = fromSlot
+	queryVals[1] = toSlot
+	queryBuilder.WriteString(`
+SELECT f_slot
+      ,(PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY f_delay))::SMALLINT
+FROM t_block_delay
+WHERE f_slot >= $1
+  AND f_slot < $2`)
+
+	if locationID != 0 {
+		queryVals = append(queryVals, locationID)
+		queryBuilder.WriteString(fmt.Sprintf(`
+  AND f_location_id = $%d`, len(queryVals)))
+	}
+
+	if sourceID != 0 {
+		queryVals = append(queryVals, sourceID)
+		queryBuilder.WriteString(fmt.Sprintf(`
+  AND f_source_id = $%d`, len(queryVals)))
+	}
+
+	if method != "" {
+		queryVals = append(queryVals, method)
+		queryBuilder.WriteString(fmt.Sprintf(`
+  AND f_method = $%d`, len(queryVals)))
+	}
+
+	queryBuilder.WriteString(`
+GROUP BY f_slot
+ORDER BY f_slot`)
+
+	rows, err := tx.Query(ctx,
+		queryBuilder.String(),
+		queryVals...,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	delays := make([]*probedb.MedianBlockDelay, 0)
+	for rows.Next() {
+		delay := &probedb.MedianBlockDelay{}
+		err := rows.Scan(&delay.Slot, &delay.DelayMS)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to scan row")
+		}
+		delays = append(delays, delay)
+	}
+	return delays, nil
 }

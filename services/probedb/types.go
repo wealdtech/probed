@@ -21,3 +21,9 @@ type BlockDelay struct {
 	Slot       uint32
 	DelayMS    uint32
 }
+
+// MedianBlockDelay holds information about a median block delay.
+type MedianBlockDelay struct {
+	Slot    uint32
+	DelayMS uint32
+}

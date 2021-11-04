@@ -22,7 +22,7 @@ import (
 
 func TestMain(m *testing.M) {
 	zerolog.SetGlobalLevel(zerolog.Disabled)
-	if os.Getenv("PROBED_SERVER") != "" {
+	if os.Getenv("PROBEDB_SERVER") != "" {
 		os.Exit(m.Run())
 	}
 }
