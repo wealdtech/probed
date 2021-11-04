@@ -23,7 +23,7 @@ import (
 // ErroringService is a mock that errors.
 type ErroringService struct{}
 
-// New returns a mock probe database that errors.
+// NewErroring returns a mock probe database that errors.
 func NewErroring() *ErroringService {
 	return &ErroringService{}
 }
