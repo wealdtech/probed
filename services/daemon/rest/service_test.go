@@ -41,6 +41,7 @@ func TestService(t *testing.T) {
 				restdaemon.WithMonitor(nil),
 				restdaemon.WithListenAddress(":14734"),
 				restdaemon.WithBlockDelaysSetter(probeDB),
+				restdaemon.WithHeadDelaysSetter(probeDB),
 			},
 			err: "problem with parameters: no monitor specified",
 		},
@@ -50,6 +51,7 @@ func TestService(t *testing.T) {
 				restdaemon.WithLogLevel(zerolog.Disabled),
 				restdaemon.WithMonitor(monitor),
 				restdaemon.WithBlockDelaysSetter(probeDB),
+				restdaemon.WithHeadDelaysSetter(probeDB),
 			},
 			err: "problem with parameters: no listen address specified",
 		},
@@ -59,8 +61,19 @@ func TestService(t *testing.T) {
 				restdaemon.WithLogLevel(zerolog.Disabled),
 				restdaemon.WithMonitor(monitor),
 				restdaemon.WithListenAddress(":14734"),
+				restdaemon.WithHeadDelaysSetter(probeDB),
 			},
 			err: "problem with parameters: no block delays setter specified",
+		},
+		{
+			name: "HeadDelaysSetterMissing",
+			params: []restdaemon.Parameter{
+				restdaemon.WithLogLevel(zerolog.Disabled),
+				restdaemon.WithMonitor(monitor),
+				restdaemon.WithListenAddress(":14734"),
+				restdaemon.WithBlockDelaysSetter(probeDB),
+			},
+			err: "problem with parameters: no head delays setter specified",
 		},
 		{
 			name: "Good",
@@ -69,6 +82,7 @@ func TestService(t *testing.T) {
 				restdaemon.WithMonitor(monitor),
 				restdaemon.WithListenAddress(":14734"),
 				restdaemon.WithBlockDelaysSetter(probeDB),
+				restdaemon.WithHeadDelaysSetter(probeDB),
 			},
 		},
 	}

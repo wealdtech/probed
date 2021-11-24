@@ -20,7 +20,7 @@ import (
 // BlockDelaysSetter defines functions to create and update block delays.
 type BlockDelaysSetter interface {
 	// SetBlockDelay sets a block delay.
-	SetBlockDelay(ctx context.Context, blockDelay *BlockDelay) error
+	SetBlockDelay(ctx context.Context, delay *Delay) error
 }
 
 // BlockDelaysProvider defines functions to obtain block delays.
@@ -34,7 +34,53 @@ type BlockDelaysProvider interface {
 		fromSlot uint32,
 		toSlot uint32,
 	) (
-		[]*MedianBlockDelay,
+		[]*DelayValue,
+		error,
+	)
+
+	// MinimumBlockDelays obtains the minimum block delays for a range of slots.
+	MinimumBlockDelays(ctx context.Context,
+		locationID uint16,
+		sourceID uint16,
+		method string,
+		fromSlot uint32,
+		toSlot uint32,
+	) (
+		[]*DelayValue,
+		error,
+	)
+}
+
+// HeadDelaysSetter defines functions to create and update head delays.
+type HeadDelaysSetter interface {
+	// SetHeadDelay sets a head delay.
+	SetHeadDelay(ctx context.Context, delay *Delay) error
+}
+
+// HeadDelaysProvider defines functions to obtain head delays.
+type HeadDelaysProvider interface {
+
+	// MedianHeadDelays obtains the median head delays for a range of slots.
+	MedianHeadDelays(ctx context.Context,
+		locationID uint16,
+		sourceID uint16,
+		method string,
+		fromSlot uint32,
+		toSlot uint32,
+	) (
+		[]*DelayValue,
+		error,
+	)
+
+	// MinimumHeadDelays obtains the minimum head delays for a range of slots.
+	MinimumHeadDelays(ctx context.Context,
+		locationID uint16,
+		sourceID uint16,
+		method string,
+		fromSlot uint32,
+		toSlot uint32,
+	) (
+		[]*DelayValue,
 		error,
 	)
 }

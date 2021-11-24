@@ -28,7 +28,12 @@ func New() *Service {
 }
 
 // SetBlockDelay sets a block delay.
-func (s *Service) SetBlockDelay(ctx context.Context, blockDelay *probedb.BlockDelay) error {
+func (s *Service) SetBlockDelay(ctx context.Context, delay *probedb.Delay) error {
+	return nil
+}
+
+// SetHeadDelay sets a head delay.
+func (s *Service) SetHeadDelay(ctx context.Context, delay *probedb.Delay) error {
 	return nil
 }
 

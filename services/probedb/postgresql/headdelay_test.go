@@ -24,7 +24,7 @@ import (
 	"github.com/wealdtech/probed/services/probedb/postgresql"
 )
 
-func TestSetBlockDelay(t *testing.T) {
+func TestSetHeadDelay(t *testing.T) {
 	ctx := context.Background()
 	s, err := postgresql.New(ctx,
 		postgresql.WithLogLevel(zerolog.Disabled),
@@ -39,7 +39,7 @@ func TestSetBlockDelay(t *testing.T) {
 	require.NoError(t, err)
 	defer cancel()
 
-	blockDelay := &probedb.Delay{
+	delay := &probedb.Delay{
 		LocationID: 1,
 		SourceID:   2,
 		Method:     "test",
@@ -48,14 +48,14 @@ func TestSetBlockDelay(t *testing.T) {
 	}
 
 	// Set the block delay.
-	require.NoError(t, s.SetBlockDelay(ctx, blockDelay))
+	require.NoError(t, s.SetHeadDelay(ctx, delay))
 
 	// Overwrite the old values.
-	blockDelay.DelayMS = 345
-	require.NoError(t, s.SetBlockDelay(ctx, blockDelay))
+	delay.DelayMS = 345
+	require.NoError(t, s.SetHeadDelay(ctx, delay))
 }
 
-func TestMedianBlockDelay(t *testing.T) {
+func TestMedianHeadDelay(t *testing.T) {
 	ctx := context.Background()
 	s, err := postgresql.New(ctx,
 		postgresql.WithLogLevel(zerolog.Disabled),
@@ -81,7 +81,7 @@ func TestMedianBlockDelay(t *testing.T) {
 
 	// Set the block delays.
 	for _, blockDelay := range blockDelays {
-		require.NoError(t, s.SetBlockDelay(ctx, blockDelay))
+		require.NoError(t, s.SetHeadDelay(ctx, blockDelay))
 	}
 
 	tests := []struct {
@@ -132,7 +132,7 @@ func TestMedianBlockDelay(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			res, err := s.MedianBlockDelays(ctx,
+			res, err := s.MedianHeadDelays(ctx,
 				test.locationID,
 				test.sourceID,
 				test.method,

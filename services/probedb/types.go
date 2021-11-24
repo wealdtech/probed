@@ -13,8 +13,8 @@
 
 package probedb
 
-// BlockDelay holds information about a block delay.
-type BlockDelay struct {
+// Delay holds information about a delay.
+type Delay struct {
 	LocationID uint16
 	SourceID   uint16
 	Method     string
@@ -22,8 +22,8 @@ type BlockDelay struct {
 	DelayMS    uint32
 }
 
-// MedianBlockDelay holds information about a median block delay.
-type MedianBlockDelay struct {
+// DelayValue holds a single delay value.
+type DelayValue struct {
 	Slot    uint32
 	DelayMS uint32
 }

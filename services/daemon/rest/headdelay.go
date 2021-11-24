@@ -21,32 +21,32 @@ import (
 	"github.com/wealdtech/probed/services/probedb"
 )
 
-func (s *Service) postBlockDelay(w http.ResponseWriter, r *http.Request) {
-	var blockDelay Delay
-	if err := json.NewDecoder(r.Body).Decode(&blockDelay); err != nil {
+func (s *Service) postHeadDelay(w http.ResponseWriter, r *http.Request) {
+	var headDelay Delay
+	if err := json.NewDecoder(r.Body).Decode(&headDelay); err != nil {
 		log.Debug().Err(err).Msg("Supplied with invalid data")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	if err := s.blockDelaysSetter.SetBlockDelay(context.Background(), &probedb.Delay{
-		LocationID: blockDelay.LocationID,
-		SourceID:   blockDelay.SourceID,
-		Method:     blockDelay.Method,
-		Slot:       blockDelay.Slot,
-		DelayMS:    blockDelay.DelayMS,
+	if err := s.headDelaysSetter.SetHeadDelay(context.Background(), &probedb.Delay{
+		LocationID: headDelay.LocationID,
+		SourceID:   headDelay.SourceID,
+		Method:     headDelay.Method,
+		Slot:       headDelay.Slot,
+		DelayMS:    headDelay.DelayMS,
 	}); err != nil {
-		log.Warn().Err(err).Msg("Failed to set block delay")
+		log.Warn().Err(err).Msg("Failed to set head delay")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
 	log.Trace().
-		Uint16("location_id", blockDelay.LocationID).
-		Uint16("source_id", blockDelay.SourceID).
-		Str("method", blockDelay.Method).
-		Uint32("slot", blockDelay.Slot).
-		Uint32("delay_ms", blockDelay.DelayMS).
+		Uint16("location_id", headDelay.LocationID).
+		Uint16("source_id", headDelay.SourceID).
+		Str("method", headDelay.Method).
+		Uint32("slot", headDelay.Slot).
+		Uint32("delay_ms", headDelay.DelayMS).
 		Msg("Metric accepted")
 	w.WriteHeader(http.StatusCreated)
 }

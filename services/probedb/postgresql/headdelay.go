@@ -22,8 +22,8 @@ import (
 	"github.com/wealdtech/probed/services/probedb"
 )
 
-// SetBlockDelay sets a block delay.
-func (s *Service) SetBlockDelay(ctx context.Context, delay *probedb.Delay) error {
+// SetHeadDelay sets a head delay.
+func (s *Service) SetHeadDelay(ctx context.Context, delay *probedb.Delay) error {
 	localTx := false
 	tx := s.tx(ctx)
 	if tx == nil {
@@ -36,12 +36,12 @@ func (s *Service) SetBlockDelay(ctx context.Context, delay *probedb.Delay) error
 	}
 
 	_, err := tx.Exec(ctx, `
-INSERT INTO t_block_delay(f_location_id
-                         ,f_source_id
-                         ,f_method
-                         ,f_slot
-                         ,f_delay
-                         )
+INSERT INTO t_head_delay(f_location_id
+                        ,f_source_id
+                        ,f_method
+                        ,f_slot
+                        ,f_delay
+                        )
 VALUES($1,$2,$3,$4,$5)
 ON CONFLICT (f_location_id,f_source_id,f_method,f_slot) DO
 UPDATE
@@ -69,8 +69,8 @@ SET f_delay = excluded.f_delay
 	return err
 }
 
-// MedianBlockDelays obtains the median block delays for a range of slots.
-func (s *Service) MedianBlockDelays(ctx context.Context,
+// MedianHeadDelays obtains the median head delays for a range of slots.
+func (s *Service) MedianHeadDelays(ctx context.Context,
 	locationID uint16,
 	sourceID uint16,
 	method string,
@@ -99,7 +99,7 @@ func (s *Service) MedianBlockDelays(ctx context.Context,
 	queryBuilder.WriteString(`
 SELECT f_slot
       ,(PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY f_delay))::INT
-FROM t_block_delay
+FROM t_head_delay
 WHERE f_slot >= $1
   AND f_slot < $2`)
 
@@ -146,8 +146,8 @@ ORDER BY f_slot`)
 	return delays, nil
 }
 
-// MinimumBlockDelays obtains the minimum block delays for a range of slots.
-func (s *Service) MinimumBlockDelays(ctx context.Context,
+// MinimumHeadDelays obtains the minimum head delays for a range of slots.
+func (s *Service) MinimumHeadDelays(ctx context.Context,
 	locationID uint16,
 	sourceID uint16,
 	method string,
@@ -176,7 +176,7 @@ func (s *Service) MinimumBlockDelays(ctx context.Context,
 	queryBuilder.WriteString(`
 SELECT f_slot
       ,MIN(f_delay)
-FROM t_block_delay
+FROM t_head_delay
 WHERE f_slot >= $1
   AND f_slot < $2`)
 

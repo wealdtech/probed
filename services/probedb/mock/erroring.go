@@ -29,7 +29,12 @@ func NewErroring() *ErroringService {
 }
 
 // SetBlockDelay sets a block delay.
-func (s *ErroringService) SetBlockDelay(ctx context.Context, blockDelay *probedb.BlockDelay) error {
+func (s *ErroringService) SetBlockDelay(ctx context.Context, delay *probedb.Delay) error {
+	return errors.New("mock")
+}
+
+// SetHeadDelay sets a head delay.
+func (s *ErroringService) SetHeadDelay(ctx context.Context, delay *probedb.Delay) error {
 	return errors.New("mock")
 }
 

@@ -25,13 +25,13 @@ import (
 	"github.com/rs/zerolog"
 	zerologger "github.com/rs/zerolog/log"
 	"github.com/wealdtech/probed/services/probedb"
-	// "github.com/wealdtech/probed/services/daemon/jsonrpc/codecs/mapping"
 )
 
 // Service is the REST daemon service.
 type Service struct {
 	srv               *http.Server
 	blockDelaysSetter probedb.BlockDelaysSetter
+	headDelaysSetter  probedb.HeadDelaysSetter
 }
 
 // module-wide log.
@@ -56,10 +56,12 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 
 	s := &Service{
 		blockDelaysSetter: parameters.blockDelaysSetter,
+		headDelaysSetter:  parameters.headDelaysSetter,
 	}
 
 	router := mux.NewRouter()
 	router.HandleFunc("/v1/blockdelay", s.postBlockDelay).Methods("POST")
+	router.HandleFunc("/v1/headdelay", s.postHeadDelay).Methods("POST")
 
 	s.srv = &http.Server{
 		Addr:    parameters.listenAddress,

@@ -27,7 +27,7 @@ import (
 	mockprobedb "github.com/wealdtech/probed/services/probedb/mock"
 )
 
-func TestSetBlockDelay(t *testing.T) {
+func TestSetHeadDelay(t *testing.T) {
 	ctx := context.Background()
 	probeDB := mockprobedb.New()
 	monitor := nullmetrics.New()

@@ -197,9 +197,15 @@ func startServices(ctx context.Context, monitor metrics.Service, majordomo major
 		return errors.New("database does not support setting block delay data")
 	}
 
+	headDelaysSetter, isHeadDelaysSetter := probeDB.(probedb.HeadDelaysSetter)
+	if !isHeadDelaysSetter {
+		return errors.New("database does not support setting head delay data")
+	}
+
 	_, err = restdaemon.New(ctx,
 		restdaemon.WithLogLevel(util.LogLevel("daemon.rest")),
 		restdaemon.WithBlockDelaysSetter(blockDelaysSetter),
+		restdaemon.WithHeadDelaysSetter(headDelaysSetter),
 		restdaemon.WithListenAddress(viper.GetString("daemon.rest.listen-address")),
 	)
 	if err != nil {

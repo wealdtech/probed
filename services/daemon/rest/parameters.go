@@ -27,6 +27,7 @@ type parameters struct {
 	monitor           metrics.Service
 	listenAddress     string
 	blockDelaysSetter probedb.BlockDelaysSetter
+	headDelaysSetter  probedb.HeadDelaysSetter
 }
 
 // Parameter is the interface for service parameters.
@@ -68,6 +69,13 @@ func WithBlockDelaysSetter(setter probedb.BlockDelaysSetter) Parameter {
 	})
 }
 
+// WithHeadDelaysSetter sets the head delays setter for this module.
+func WithHeadDelaysSetter(setter probedb.HeadDelaysSetter) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.headDelaysSetter = setter
+	})
+}
+
 // parseAndCheckParameters parses and checks parameters to ensure that mandatory parameters are present and correct.
 func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	parameters := parameters{
@@ -88,6 +96,9 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	}
 	if parameters.blockDelaysSetter == nil {
 		return nil, errors.New("no block delays setter specified")
+	}
+	if parameters.headDelaysSetter == nil {
+		return nil, errors.New("no head delays setter specified")
 	}
 
 	return &parameters, nil

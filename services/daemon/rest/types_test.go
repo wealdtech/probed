@@ -22,11 +22,11 @@ import (
 	"gotest.tools/assert"
 )
 
-func TestBlockDelayJSON(t *testing.T) {
+func TestDelayJSON(t *testing.T) {
 	tests := []struct {
 		name  string
 		input []byte
-		res   *rest.BlockDelay
+		res   *rest.Delay
 		err   string
 	}{
 		{
@@ -36,7 +36,7 @@ func TestBlockDelayJSON(t *testing.T) {
 		{
 			name:  "JSONBad",
 			input: []byte("[]"),
-			err:   "json: cannot unmarshal array into Go value of type rest.blockDelayJSON",
+			err:   "json: cannot unmarshal array into Go value of type rest.delayJSON",
 		},
 		{
 			name:  "LocationIDMissing",
@@ -46,7 +46,7 @@ func TestBlockDelayJSON(t *testing.T) {
 		{
 			name:  "LocationIDWrongType",
 			input: []byte(`{"location_id":true,"source_id":"2","method":"head event","slot":"123","delay_ms":"12345"}`),
-			err:   "json: cannot unmarshal bool into Go struct field blockDelayJSON.location_id of type string",
+			err:   "json: cannot unmarshal bool into Go struct field delayJSON.location_id of type string",
 		},
 		{
 			name:  "LocationIDInvalid",
@@ -61,7 +61,7 @@ func TestBlockDelayJSON(t *testing.T) {
 		{
 			name:  "SourceIDWrongType",
 			input: []byte(`{"location_id":"1","source_id":true,"method":"head event","slot":"123","delay_ms":"12345"}`),
-			err:   "json: cannot unmarshal bool into Go struct field blockDelayJSON.source_id of type string",
+			err:   "json: cannot unmarshal bool into Go struct field delayJSON.source_id of type string",
 		},
 		{
 			name:  "SourceIDInvalid",
@@ -76,7 +76,7 @@ func TestBlockDelayJSON(t *testing.T) {
 		{
 			name:  "MethodWrongType",
 			input: []byte(`{"location_id":"1","source_id":"2","method":true,"slot":"123","delay_ms":"12345"}`),
-			err:   "json: cannot unmarshal bool into Go struct field blockDelayJSON.method of type string",
+			err:   "json: cannot unmarshal bool into Go struct field delayJSON.method of type string",
 		},
 		{
 			name:  "SlotMissing",
@@ -86,7 +86,7 @@ func TestBlockDelayJSON(t *testing.T) {
 		{
 			name:  "SlotWrongType",
 			input: []byte(`{"location_id":"1","source_id":"2","method":"head event","slot":true,"delay_ms":"12345"}`),
-			err:   "json: cannot unmarshal bool into Go struct field blockDelayJSON.slot of type string",
+			err:   "json: cannot unmarshal bool into Go struct field delayJSON.slot of type string",
 		},
 		{
 			name:  "SlotWnvalid",
@@ -101,7 +101,7 @@ func TestBlockDelayJSON(t *testing.T) {
 		{
 			name:  "DelayMSWrongType",
 			input: []byte(`{"location_id":"1","source_id":"2","method":"head event","slot":"123","delay_ms":true}`),
-			err:   "json: cannot unmarshal bool into Go struct field blockDelayJSON.delay_ms of type string",
+			err:   "json: cannot unmarshal bool into Go struct field delayJSON.delay_ms of type string",
 		},
 		{
 			name:  "DelayMSInvalid",
@@ -111,7 +111,7 @@ func TestBlockDelayJSON(t *testing.T) {
 		{
 			name:  "Good",
 			input: []byte(`{"location_id":"1","source_id":"2","method":"head event","slot":"123","delay_ms":"12345"}`),
-			res: &rest.BlockDelay{
+			res: &rest.Delay{
 				LocationID: 1,
 				SourceID:   2,
 				Method:     "head event",
@@ -123,7 +123,7 @@ func TestBlockDelayJSON(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var res rest.BlockDelay
+			var res rest.Delay
 			err := json.Unmarshal(test.input, &res)
 			if test.err != "" {
 				require.EqualError(t, err, test.err)

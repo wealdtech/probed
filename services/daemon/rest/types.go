@@ -21,8 +21,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// BlockDelay holds information about a block delay.
-type BlockDelay struct {
+// Delay holds information about a delay.
+type Delay struct {
 	LocationID uint16
 	SourceID   uint16
 	Method     string
@@ -30,8 +30,8 @@ type BlockDelay struct {
 	DelayMS    uint32
 }
 
-// blockDelayJSON is a raw representation of the struct.
-type blockDelayJSON struct {
+// delayJSON is a raw representation of the struct.
+type delayJSON struct {
 	LocationID string `json:"location_id"`
 	SourceID   string `json:"source_id"`
 	Method     string `json:"method"`
@@ -40,8 +40,8 @@ type blockDelayJSON struct {
 }
 
 // MarshalJSON implements json.Marshaler.
-func (b *BlockDelay) MarshalJSON() ([]byte, error) {
-	return json.Marshal(&blockDelayJSON{
+func (b *Delay) MarshalJSON() ([]byte, error) {
+	return json.Marshal(&delayJSON{
 		LocationID: fmt.Sprintf("%d", b.LocationID),
 		SourceID:   fmt.Sprintf("%d", b.SourceID),
 		Method:     b.Method,
@@ -51,49 +51,49 @@ func (b *BlockDelay) MarshalJSON() ([]byte, error) {
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (b *BlockDelay) UnmarshalJSON(input []byte) error {
-	var blockDelayJSON blockDelayJSON
-	err := json.Unmarshal(input, &blockDelayJSON)
+func (b *Delay) UnmarshalJSON(input []byte) error {
+	var data delayJSON
+	err := json.Unmarshal(input, &data)
 	if err != nil {
 		return err
 	}
 
-	if blockDelayJSON.LocationID == "" {
+	if data.LocationID == "" {
 		return errors.New("location_id missing")
 	}
-	locationID, err := strconv.ParseUint(blockDelayJSON.LocationID, 10, 16)
+	locationID, err := strconv.ParseUint(data.LocationID, 10, 16)
 	if err != nil {
 		return errors.Wrap(err, "invalid value for location_id")
 	}
 	b.LocationID = uint16(locationID)
 
-	if blockDelayJSON.SourceID == "" {
+	if data.SourceID == "" {
 		return errors.New("source_id missing")
 	}
-	sourceID, err := strconv.ParseUint(blockDelayJSON.SourceID, 10, 16)
+	sourceID, err := strconv.ParseUint(data.SourceID, 10, 16)
 	if err != nil {
 		return errors.Wrap(err, "invalid value for source_id")
 	}
 	b.SourceID = uint16(sourceID)
 
-	if blockDelayJSON.Method == "" {
+	if data.Method == "" {
 		return errors.New("method missing")
 	}
-	b.Method = blockDelayJSON.Method
+	b.Method = data.Method
 
-	if blockDelayJSON.Slot == "" {
+	if data.Slot == "" {
 		return errors.New("slot missing")
 	}
-	slot, err := strconv.ParseUint(blockDelayJSON.Slot, 10, 32)
+	slot, err := strconv.ParseUint(data.Slot, 10, 32)
 	if err != nil {
 		return errors.Wrap(err, "invalid value for slot")
 	}
 	b.Slot = uint32(slot)
 
-	if blockDelayJSON.DelayMS == "" {
+	if data.DelayMS == "" {
 		return errors.New("delay_ms missing")
 	}
-	delayMS, err := strconv.ParseUint(blockDelayJSON.DelayMS, 10, 32)
+	delayMS, err := strconv.ParseUint(data.DelayMS, 10, 32)
 	if err != nil {
 		return errors.Wrap(err, "invalid value for delay_ms")
 	}

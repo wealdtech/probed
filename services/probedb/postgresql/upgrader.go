@@ -232,6 +232,17 @@ CREATE TABLE t_block_delay (
  ,f_delay       INTEGER NOT NULL
 );
 CREATE UNIQUE INDEX i_block_delay_1 ON t_block_delay(f_location_id, f_source_id, f_method, f_slot);
+
+-- t_head_delay contains head delay matrics.
+CREATE TABLE t_head_delay (
+  f_location_id SMALLINT NOT NULL
+ ,f_source_id   SMALLINT NOT NULL
+ ,f_method      TEXT NOT NULL
+ ,f_slot        INTEGER NOT NULL
+  -- f_delay is the recorded delay in milliseconds.
+ ,f_delay       INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX i_head_delay_1 ON t_head_delay(f_location_id, f_source_id, f_method, f_slot);
 `); err != nil {
 		cancel()
 		return errors.Wrap(err, "failed to create initial tables")
