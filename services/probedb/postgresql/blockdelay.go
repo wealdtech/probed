@@ -23,6 +23,7 @@ import (
 )
 
 // SetBlockDelay sets a block delay.
+// If a delay already exists for this block then ignore it.
 func (s *Service) SetBlockDelay(ctx context.Context, delay *probedb.Delay) error {
 	localTx := false
 	tx := s.tx(ctx)
@@ -43,10 +44,8 @@ INSERT INTO t_block_delay(f_location_id
                          ,f_delay
                          )
 VALUES($1,$2,$3,$4,$5)
-ON CONFLICT (f_location_id,f_source_id,f_method,f_slot) DO
-UPDATE
-SET f_delay = excluded.f_delay
-  `,
+ON CONFLICT (f_location_id,f_source_id,f_method,f_slot) DO NOTHING
+`,
 		delay.LocationID,
 		delay.SourceID,
 		delay.Method,

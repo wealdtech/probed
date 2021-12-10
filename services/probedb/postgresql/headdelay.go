@@ -23,6 +23,7 @@ import (
 )
 
 // SetHeadDelay sets a head delay.
+// If a delay already exists for this slot then ignore it.
 func (s *Service) SetHeadDelay(ctx context.Context, delay *probedb.Delay) error {
 	localTx := false
 	tx := s.tx(ctx)
@@ -43,10 +44,8 @@ INSERT INTO t_head_delay(f_location_id
                         ,f_delay
                         )
 VALUES($1,$2,$3,$4,$5)
-ON CONFLICT (f_location_id,f_source_id,f_method,f_slot) DO
-UPDATE
-SET f_delay = excluded.f_delay
-  `,
+ON CONFLICT (f_location_id,f_source_id,f_method,f_slot) DO NOTHING
+`,
 		delay.LocationID,
 		delay.SourceID,
 		delay.Method,
