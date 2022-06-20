@@ -1,4 +1,4 @@
-// Copyright © 2021 Weald Technology Limited.
+// Copyright © 2021 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -35,6 +35,7 @@ func TestSetBlockDelay(t *testing.T) {
 	service, err := New(ctx,
 		WithLogLevel(zerolog.Disabled),
 		WithMonitor(monitor),
+		WithServerName("server.wealdtech.com"),
 		WithListenAddress(":14734"),
 		WithBlockDelaysSetter(probeDB),
 		WithHeadDelaysSetter(probeDB),
@@ -45,6 +46,7 @@ func TestSetBlockDelay(t *testing.T) {
 	erroringService, err := New(ctx,
 		WithLogLevel(zerolog.Disabled),
 		WithMonitor(monitor),
+		WithServerName("server.wealdtech.com"),
 		WithListenAddress(":14735"),
 		WithBlockDelaysSetter(erroringProbeDB),
 		WithHeadDelaysSetter(erroringProbeDB),
@@ -80,7 +82,7 @@ func TestSetBlockDelay(t *testing.T) {
 			name:    "Good",
 			service: service,
 			request: &http.Request{
-				Body: io.NopCloser(strings.NewReader(`{"location_id":"1","source_id":"2","method":"head event","slot":"123","delay_ms":"12345"}`)),
+				Body: io.NopCloser(strings.NewReader(`{"source":"client","method":"block event","slot":"123","delay_ms":"12345"}`)),
 			},
 			writer:     httptest.NewRecorder(),
 			statusCode: http.StatusCreated,
@@ -89,7 +91,7 @@ func TestSetBlockDelay(t *testing.T) {
 			name:    "Erroring",
 			service: erroringService,
 			request: &http.Request{
-				Body: io.NopCloser(strings.NewReader(`{"location_id":"1","source_id":"2","method":"head event","slot":"123","delay_ms":"12345"}`)),
+				Body: io.NopCloser(strings.NewReader(`{"source":"client","method":"block event","slot":"123","delay_ms":"12345"}`)),
 			},
 			writer:     httptest.NewRecorder(),
 			statusCode: http.StatusInternalServerError,

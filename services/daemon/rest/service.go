@@ -15,16 +15,20 @@ package rest
 
 import (
 	"context"
+	"crypto/tls"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/gin-gonic/gin"
 	"github.com/gorilla/mux"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	zerologger "github.com/rs/zerolog/log"
+	"github.com/wealdtech/probed/loggers"
 	"github.com/wealdtech/probed/services/probedb"
+	"golang.org/x/crypto/acme/autocert"
 )
 
 // Service is the REST daemon service.
@@ -59,6 +63,23 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		headDelaysSetter:  parameters.headDelaysSetter,
 	}
 
+	// Set to release mode to remove debug logging.
+	gin.SetMode(gin.ReleaseMode)
+
+	// Start up the router.
+	r := gin.New()
+	r.Use(gin.Recovery())
+	if err := r.SetTrustedProxies(nil); err != nil {
+		return nil, errors.Wrap(err, "failed to set trusted proxies")
+	}
+	r.Use(loggers.NewGinLogger(log))
+
+	certManager := autocert.Manager{
+		Prompt:     autocert.AcceptTOS,
+		HostPolicy: autocert.HostWhitelist(parameters.serverName),
+		Cache:      autocert.DirCache("./certs"),
+	}
+
 	router := mux.NewRouter()
 	router.HandleFunc("/v1/blockdelay", s.postBlockDelay).Methods("POST")
 	router.HandleFunc("/v1/headdelay", s.postHeadDelay).Methods("POST")
@@ -66,6 +87,24 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	s.srv = &http.Server{
 		Addr:    parameters.listenAddress,
 		Handler: router,
+		TLSConfig: &tls.Config{
+			MinVersion:               tls.VersionTLS13,
+			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
+			GetCertificate:           certManager.GetCertificate,
+			PreferServerCipherSuites: true,
+			CipherSuites: []uint16{
+				tls.TLS_AES_128_GCM_SHA256,
+				tls.TLS_CHACHA20_POLY1305_SHA256,
+				tls.TLS_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+				tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+				tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
+			},
+		},
+		TLSNextProto: make(map[string]func(*http.Server, *tls.Conn, http.Handler)),
 	}
 
 	go func() {
@@ -82,10 +121,19 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 		}
 	}()
 
+	// Listen on HTTP port for certificate updates.
+	go func() {
+		log.Trace().Str("listen_address", parameters.listenAddress).Msg("Starting certificate update service")
+		if err := http.ListenAndServe(":http", certManager.HTTPHandler(nil)); err != nil {
+			log.Error().Err(err).Msg("Certificate update service stopped")
+		}
+	}()
+
 	go func() {
 		log.Trace().Str("listen_address", parameters.listenAddress).Msg("Starting daemon")
-		if err := s.srv.ListenAndServe(); err != http.ErrServerClosed {
-			log.Fatal().Err(err).Msg("Server shut down unexpectedly")
+		if err := s.srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
+			// if err := s.srv.ListenAndServe(); err != http.ErrServerClosed {
+			log.Error().Err(err).Msg("Server shut down unexpectedly")
 		}
 	}()
 

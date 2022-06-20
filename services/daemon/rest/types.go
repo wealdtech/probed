@@ -16,6 +16,7 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -23,63 +24,63 @@ import (
 
 // Delay holds information about a delay.
 type Delay struct {
-	LocationID uint16
-	SourceID   uint16
-	Method     string
-	Slot       uint32
-	DelayMS    uint32
+	IPAddr  *net.IP
+	Source  string
+	Method  string
+	Slot    uint32
+	DelayMS uint32
 }
 
 // delayJSON is a raw representation of the struct.
 type delayJSON struct {
-	LocationID string `json:"location_id"`
-	SourceID   string `json:"source_id"`
-	Method     string `json:"method"`
-	Slot       string `json:"slot"`
-	DelayMS    string `json:"delay_ms"`
+	IPAddr  string `json:"ip_addr,omitempty"`
+	Source  string `json:"source"`
+	Method  string `json:"method"`
+	Slot    string `json:"slot"`
+	DelayMS string `json:"delay_ms"`
 }
 
 // MarshalJSON implements json.Marshaler.
-func (b *Delay) MarshalJSON() ([]byte, error) {
+func (d *Delay) MarshalJSON() ([]byte, error) {
+	ipAddr := ""
+	if d.IPAddr != nil {
+		ipAddr = d.IPAddr.String()
+	}
+
 	return json.Marshal(&delayJSON{
-		LocationID: fmt.Sprintf("%d", b.LocationID),
-		SourceID:   fmt.Sprintf("%d", b.SourceID),
-		Method:     b.Method,
-		Slot:       fmt.Sprintf("%d", b.Slot),
-		DelayMS:    fmt.Sprintf("%d", b.DelayMS),
+		IPAddr:  ipAddr,
+		Source:  d.Source,
+		Method:  d.Method,
+		Slot:    fmt.Sprintf("%d", d.Slot),
+		DelayMS: fmt.Sprintf("%d", d.DelayMS),
 	})
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
-func (b *Delay) UnmarshalJSON(input []byte) error {
+func (d *Delay) UnmarshalJSON(input []byte) error {
 	var data delayJSON
 	err := json.Unmarshal(input, &data)
 	if err != nil {
 		return err
 	}
 
-	if data.LocationID == "" {
-		return errors.New("location_id missing")
+	if data.IPAddr != "" {
+		ipAddr := net.ParseIP(data.IPAddr)
+		if ipAddr.To4() != nil {
+			ipAddr = ipAddr.To4()
+		}
+		d.IPAddr = &ipAddr
 	}
-	locationID, err := strconv.ParseUint(data.LocationID, 10, 16)
-	if err != nil {
-		return errors.Wrap(err, "invalid value for location_id")
-	}
-	b.LocationID = uint16(locationID)
 
-	if data.SourceID == "" {
-		return errors.New("source_id missing")
+	if data.Source == "" {
+		return errors.New("source missing")
 	}
-	sourceID, err := strconv.ParseUint(data.SourceID, 10, 16)
-	if err != nil {
-		return errors.Wrap(err, "invalid value for source_id")
-	}
-	b.SourceID = uint16(sourceID)
+	d.Source = data.Source
 
 	if data.Method == "" {
 		return errors.New("method missing")
 	}
-	b.Method = data.Method
+	d.Method = data.Method
 
 	if data.Slot == "" {
 		return errors.New("slot missing")
@@ -88,7 +89,7 @@ func (b *Delay) UnmarshalJSON(input []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "invalid value for slot")
 	}
-	b.Slot = uint32(slot)
+	d.Slot = uint32(slot)
 
 	if data.DelayMS == "" {
 		return errors.New("delay_ms missing")
@@ -97,7 +98,7 @@ func (b *Delay) UnmarshalJSON(input []byte) error {
 	if err != nil {
 		return errors.Wrap(err, "invalid value for delay_ms")
 	}
-	b.DelayMS = uint32(delayMS)
+	d.DelayMS = uint32(delayMS)
 
 	return nil
 }

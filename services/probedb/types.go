@@ -1,4 +1,4 @@
-// Copyright © 2021 Weald Technology Trading.
+// Copyright © 2021, 2022 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -13,17 +13,26 @@
 
 package probedb
 
+import "net"
+
 // Delay holds information about a delay.
 type Delay struct {
-	LocationID uint16
-	SourceID   uint16
-	Method     string
-	Slot       uint32
-	DelayMS    uint32
+	IPAddr  net.IP
+	Source  string
+	Method  string
+	Slot    uint32
+	DelayMS uint32
 }
 
 // DelayValue holds a single delay value.
 type DelayValue struct {
 	Slot    uint32
 	DelayMS uint32
+}
+
+// Attestation holds information about an attestation.
+type Attestation struct {
+	Slot            uint32
+	Committee       uint16
+	AggregationBits []byte
 }

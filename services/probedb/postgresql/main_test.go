@@ -1,4 +1,4 @@
-// Copyright © 2021 Weald Technology Limited.
+// Copyright © 2021 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,12 +16,9 @@ package postgresql_test
 import (
 	"os"
 	"testing"
-
-	"github.com/rs/zerolog"
 )
 
 func TestMain(m *testing.M) {
-	zerolog.SetGlobalLevel(zerolog.Disabled)
 	if os.Getenv("PROBEDB_SERVER") != "" {
 		os.Exit(m.Run())
 	}

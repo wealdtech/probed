@@ -25,30 +25,8 @@ type BlockDelaysSetter interface {
 
 // BlockDelaysProvider defines functions to obtain block delays.
 type BlockDelaysProvider interface {
-
-	// MedianBlockDelays obtains the median block delays for a range of slots.
-	MedianBlockDelays(ctx context.Context,
-		locationID uint16,
-		sourceID uint16,
-		method string,
-		fromSlot uint32,
-		toSlot uint32,
-	) (
-		[]*DelayValue,
-		error,
-	)
-
-	// MinimumBlockDelays obtains the minimum block delays for a range of slots.
-	MinimumBlockDelays(ctx context.Context,
-		locationID uint16,
-		sourceID uint16,
-		method string,
-		fromSlot uint32,
-		toSlot uint32,
-	) (
-		[]*DelayValue,
-		error,
-	)
+	// BlockDelays obtains the block delays for a range of slots.
+	BlockDelays(ctx context.Context, filter *DelayFilter) ([]*DelayValue, error)
 }
 
 // HeadDelaysSetter defines functions to create and update head delays.
@@ -59,30 +37,17 @@ type HeadDelaysSetter interface {
 
 // HeadDelaysProvider defines functions to obtain head delays.
 type HeadDelaysProvider interface {
+	// HeadDelays obtains the minimum head delays for a range of slots.
+	HeadDelays(ctx context.Context, filter *DelayFilter) ([]*DelayValue, error)
+}
 
-	// MedianHeadDelays obtains the median head delays for a range of slots.
-	MedianHeadDelays(ctx context.Context,
-		locationID uint16,
-		sourceID uint16,
-		method string,
-		fromSlot uint32,
-		toSlot uint32,
-	) (
-		[]*DelayValue,
-		error,
-	)
+// AttestationsSetter defines functions to create and update attestations.
+type AttestationsSetter interface {
+	// SetAttestations sets multiple attestations.
+	SetAttestations(ctx context.Context, attestations []*Attestation) error
 
-	// MinimumHeadDelays obtains the minimum head delays for a range of slots.
-	MinimumHeadDelays(ctx context.Context,
-		locationID uint16,
-		sourceID uint16,
-		method string,
-		fromSlot uint32,
-		toSlot uint32,
-	) (
-		[]*DelayValue,
-		error,
-	)
+	// SetAttestation sets an attestation.
+	SetAttestation(ctx context.Context, attestation *Attestation) error
 }
 
 // Service defines a minimal probe database service.

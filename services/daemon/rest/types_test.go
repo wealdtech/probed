@@ -1,4 +1,4 @@
-// Copyright © 2021 Attestant Limited.
+// Copyright © 2022 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -15,12 +15,19 @@ package rest_test
 
 import (
 	"encoding/json"
+	"net"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"github.com/wealdtech/probed/services/daemon/rest"
 	"gotest.tools/assert"
 )
+
+func ip4Ptr(in string) *net.IP {
+	ip := net.ParseIP(in)
+	ip4 := ip.To4()
+	return &ip4
+}
 
 func TestDelayJSON(t *testing.T) {
 	tests := []struct {
@@ -39,84 +46,74 @@ func TestDelayJSON(t *testing.T) {
 			err:   "json: cannot unmarshal array into Go value of type rest.delayJSON",
 		},
 		{
-			name:  "LocationIDMissing",
-			input: []byte(`{"source_id":"2","method":"head event","slot":"123","delay_ms":"12345"}`),
-			err:   "location_id missing",
+			name:  "SourceMissing",
+			input: []byte(`{"method":"head event","slot":"123","delay_ms":"12345"}`),
+			err:   "source missing",
 		},
 		{
-			name:  "LocationIDWrongType",
-			input: []byte(`{"location_id":true,"source_id":"2","method":"head event","slot":"123","delay_ms":"12345"}`),
-			err:   "json: cannot unmarshal bool into Go struct field delayJSON.location_id of type string",
-		},
-		{
-			name:  "LocationIDInvalid",
-			input: []byte(`{"location_id":"-1","source_id":"2","method":"head event","slot":"123","delay_ms":"12345"}`),
-			err:   "invalid value for location_id: strconv.ParseUint: parsing \"-1\": invalid syntax",
-		},
-		{
-			name:  "SourceIDMissing",
-			input: []byte(`{"location_id":"1","method":"head event","slot":"123","delay_ms":"12345"}`),
-			err:   "source_id missing",
-		},
-		{
-			name:  "SourceIDWrongType",
-			input: []byte(`{"location_id":"1","source_id":true,"method":"head event","slot":"123","delay_ms":"12345"}`),
-			err:   "json: cannot unmarshal bool into Go struct field delayJSON.source_id of type string",
-		},
-		{
-			name:  "SourceIDInvalid",
-			input: []byte(`{"location_id":"1","source_id":"-2","method":"head event","slot":"123","delay_ms":"12345"}`),
-			err:   "invalid value for source_id: strconv.ParseUint: parsing \"-2\": invalid syntax",
+			name:  "SourceWrongType",
+			input: []byte(`{"source":true,"method":"head event","slot":"123","delay_ms":"12345"}`),
+			err:   "json: cannot unmarshal bool into Go struct field delayJSON.source of type string",
 		},
 		{
 			name:  "MethodMissing",
-			input: []byte(`{"location_id":"1","source_id":"2","slot":"123","delay_ms":"12345"}`),
+			input: []byte(`{"source":"client","slot":"123","delay_ms":"12345"}`),
 			err:   "method missing",
 		},
 		{
 			name:  "MethodWrongType",
-			input: []byte(`{"location_id":"1","source_id":"2","method":true,"slot":"123","delay_ms":"12345"}`),
+			input: []byte(`{"source":"client","method":true,"slot":"123","delay_ms":"12345"}`),
 			err:   "json: cannot unmarshal bool into Go struct field delayJSON.method of type string",
 		},
 		{
 			name:  "SlotMissing",
-			input: []byte(`{"location_id":"1","source_id":"2","method":"head event","delay_ms":"12345"}`),
+			input: []byte(`{"source":"client","method":"head event","delay_ms":"12345"}`),
 			err:   "slot missing",
 		},
 		{
 			name:  "SlotWrongType",
-			input: []byte(`{"location_id":"1","source_id":"2","method":"head event","slot":true,"delay_ms":"12345"}`),
+			input: []byte(`{"source":"client","method":"head event","slot":true,"delay_ms":"12345"}`),
 			err:   "json: cannot unmarshal bool into Go struct field delayJSON.slot of type string",
 		},
 		{
-			name:  "SlotWnvalid",
-			input: []byte(`{"location_id":"1","source_id":"2","method":"head event","slot":"-1","delay_ms":"12345"}`),
+			name:  "SlotInvalid",
+			input: []byte(`{"source":"client","method":"head event","slot":"-1","delay_ms":"12345"}`),
 			err:   "invalid value for slot: strconv.ParseUint: parsing \"-1\": invalid syntax",
 		},
 		{
 			name:  "DelayMSMissing",
-			input: []byte(`{"location_id":"1","source_id":"2","method":"head event","slot":"123"}`),
+			input: []byte(`{"source":"client","method":"head event","slot":"123"}`),
 			err:   "delay_ms missing",
 		},
 		{
 			name:  "DelayMSWrongType",
-			input: []byte(`{"location_id":"1","source_id":"2","method":"head event","slot":"123","delay_ms":true}`),
+			input: []byte(`{"source":"client","method":"head event","slot":"123","delay_ms":true}`),
 			err:   "json: cannot unmarshal bool into Go struct field delayJSON.delay_ms of type string",
 		},
 		{
 			name:  "DelayMSInvalid",
-			input: []byte(`{"location_id":"1","source_id":"2","method":"head event","slot":"123","delay_ms":"-1"}`),
+			input: []byte(`{"source":"client","method":"head event","slot":"123","delay_ms":"-1"}`),
 			err:   "invalid value for delay_ms: strconv.ParseUint: parsing \"-1\": invalid syntax",
 		},
 		{
 			name:  "Good",
-			input: []byte(`{"location_id":"1","source_id":"2","method":"head event","slot":"123","delay_ms":"12345"}`),
+			input: []byte(`{"source":"client","method":"head event","slot":"123","delay_ms":"12345"}`),
 			res: &rest.Delay{
-				LocationID: 1,
-				SourceID:   2,
-				Method:     "head event",
-				Slot:       123,
-				DelayMS:    12345,
+				Source:  "client",
+				Method:  "head event",
+				Slot:    123,
+				DelayMS: 12345,
+			},
+		},
+		{
+			name:  "WithIP",
+			input: []byte(`{"ip_addr":"1.2.3.4","source":"client","method":"head event","slot":"123","delay_ms":"12345"}`),
+			res: &rest.Delay{
+				IPAddr:  ip4Ptr("1.2.3.4"),
+				Source:  "client",
+				Method:  "head event",
+				Slot:    123,
+				DelayMS: 12345,
 			},
 		},
 	}
@@ -131,8 +128,8 @@ func TestDelayJSON(t *testing.T) {
 				require.NoError(t, err)
 				rt, err := json.Marshal(&res)
 				require.NoError(t, err)
-				require.Equal(t, test.res.LocationID, res.LocationID)
-				require.Equal(t, test.res.SourceID, res.SourceID)
+				require.Equal(t, test.res.IPAddr, res.IPAddr)
+				require.Equal(t, test.res.Source, res.Source)
 				require.Equal(t, test.res.Method, res.Method)
 				require.Equal(t, test.res.Slot, res.Slot)
 				require.Equal(t, test.res.DelayMS, res.DelayMS)

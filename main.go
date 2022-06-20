@@ -44,7 +44,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "0.1.0"
+var ReleaseVersion = "0.2.0"
 
 func main() {
 	os.Exit(main2())
@@ -204,9 +204,10 @@ func startServices(ctx context.Context, monitor metrics.Service, majordomo major
 
 	_, err = restdaemon.New(ctx,
 		restdaemon.WithLogLevel(util.LogLevel("daemon.rest")),
+		restdaemon.WithServerName(viper.GetString("daemon.rest.server-name")),
+		restdaemon.WithListenAddress(viper.GetString("daemon.rest.listen-address")),
 		restdaemon.WithBlockDelaysSetter(blockDelaysSetter),
 		restdaemon.WithHeadDelaysSetter(headDelaysSetter),
-		restdaemon.WithListenAddress(viper.GetString("daemon.rest.listen-address")),
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to start REST daemon")

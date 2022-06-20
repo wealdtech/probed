@@ -25,6 +25,7 @@ import (
 type parameters struct {
 	logLevel          zerolog.Level
 	monitor           metrics.Service
+	serverName        string
 	listenAddress     string
 	blockDelaysSetter probedb.BlockDelaysSetter
 	headDelaysSetter  probedb.HeadDelaysSetter
@@ -52,6 +53,13 @@ func WithLogLevel(logLevel zerolog.Level) Parameter {
 func WithMonitor(monitor metrics.Service) Parameter {
 	return parameterFunc(func(p *parameters) {
 		p.monitor = monitor
+	})
+}
+
+// WithServerName sets the server name for this module.
+func WithServerName(name string) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.serverName = name
 	})
 }
 
@@ -90,6 +98,9 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 
 	if parameters.monitor == nil {
 		return nil, errors.New("no monitor specified")
+	}
+	if parameters.serverName == "" {
+		return nil, errors.New("no server name specified")
 	}
 	if parameters.listenAddress == "" {
 		return nil, errors.New("no listen address specified")

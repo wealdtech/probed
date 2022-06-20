@@ -1,4 +1,4 @@
-// Copyright © 2021 Weald Technology Limited.
+// Copyright © 2021, 2022 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -29,12 +29,19 @@ func (s *Service) postBlockDelay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	sourceIP, err := sourceIP(r)
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to obtain source IP")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
 	if err := s.blockDelaysSetter.SetBlockDelay(context.Background(), &probedb.Delay{
-		LocationID: blockDelay.LocationID,
-		SourceID:   blockDelay.SourceID,
-		Method:     blockDelay.Method,
-		Slot:       blockDelay.Slot,
-		DelayMS:    blockDelay.DelayMS,
+		IPAddr:  sourceIP,
+		Source:  blockDelay.Source,
+		Method:  blockDelay.Method,
+		Slot:    blockDelay.Slot,
+		DelayMS: blockDelay.DelayMS,
 	}); err != nil {
 		log.Warn().Err(err).Msg("Failed to set block delay")
 		w.WriteHeader(http.StatusInternalServerError)
@@ -42,8 +49,8 @@ func (s *Service) postBlockDelay(w http.ResponseWriter, r *http.Request) {
 	}
 
 	log.Trace().
-		Uint16("location_id", blockDelay.LocationID).
-		Uint16("source_id", blockDelay.SourceID).
+		Str("ip_addr", sourceIP.String()).
+		Str("source", blockDelay.Source).
 		Str("method", blockDelay.Method).
 		Uint32("slot", blockDelay.Slot).
 		Uint32("delay_ms", blockDelay.DelayMS).

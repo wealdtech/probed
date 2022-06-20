@@ -1,4 +1,4 @@
-// Copyright © 2021 Weald Technology Trading.
+// Copyright © 2021, 2022 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -16,6 +16,7 @@ package postgresql
 import (
 	"context"
 	"fmt"
+	"net"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -36,18 +37,24 @@ func (s *Service) SetBlockDelay(ctx context.Context, delay *probedb.Delay) error
 		localTx = true
 	}
 
+	// Force the IP address to be a V4 if possible
+	ip := delay.IPAddr.To4()
+	if ip == nil {
+		ip = delay.IPAddr
+	}
+
 	_, err := tx.Exec(ctx, `
-INSERT INTO t_block_delay(f_location_id
-                         ,f_source_id
-                         ,f_method
-                         ,f_slot
-                         ,f_delay
-                         )
+INSERT INTO t_block_delays(f_ip_addr
+                          ,f_source
+                          ,f_method
+                          ,f_slot
+                          ,f_delay
+                          )
 VALUES($1,$2,$3,$4,$5)
-ON CONFLICT (f_location_id,f_source_id,f_method,f_slot) DO NOTHING
+ON CONFLICT (f_ip_addr, f_source, f_method, f_slot) DO NOTHING
 `,
-		delay.LocationID,
-		delay.SourceID,
+		ip,
+		delay.Source,
 		delay.Method,
 		delay.Slot,
 		delay.DelayMS,
@@ -68,13 +75,10 @@ ON CONFLICT (f_location_id,f_source_id,f_method,f_slot) DO NOTHING
 	return err
 }
 
-// MedianBlockDelays obtains the median block delays for a range of slots.
-func (s *Service) MedianBlockDelays(ctx context.Context,
-	locationID uint16,
-	sourceID uint16,
-	method string,
-	fromSlot uint32,
-	toSlot uint32,
+// BlockDelays obtains the block delays for a range of slots.
+func (s *Service) BlockDelays(
+	ctx context.Context,
+	filter *probedb.DelayFilter,
 ) (
 	[]*probedb.DelayValue,
 	error,
@@ -91,38 +95,82 @@ func (s *Service) MedianBlockDelays(ctx context.Context,
 
 	// Build the query.
 	queryBuilder := strings.Builder{}
-	queryVals := make([]interface{}, 2)
+	queryVals := make([]interface{}, 0)
 
-	queryVals[0] = fromSlot
-	queryVals[1] = toSlot
 	queryBuilder.WriteString(`
-SELECT f_slot
-      ,(PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY f_delay))::INT
-FROM t_block_delay
-WHERE f_slot >= $1
-  AND f_slot < $2`)
+SELECT f_slot`)
 
-	if locationID != 0 {
-		queryVals = append(queryVals, locationID)
-		queryBuilder.WriteString(fmt.Sprintf(`
-  AND f_location_id = $%d`, len(queryVals)))
+	switch filter.Selection {
+	case probedb.SelectionMinimum:
+		queryBuilder.WriteString(`
+      ,MIN(f_delay)`)
+	case probedb.SelectionMaximum:
+		queryBuilder.WriteString(`
+      ,MAX(f_delay)`)
+	case probedb.SelectionMedian:
+		queryBuilder.WriteString(`
+      ,(PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY f_delay))::INT`)
+	default:
+		return nil, errors.New("unhandled selection criteria")
 	}
 
-	if sourceID != 0 {
-		queryVals = append(queryVals, sourceID)
+	queryBuilder.WriteString(`
+FROM t_block_delays`)
+
+	wherestr := "WHERE"
+
+	if filter.IPAddr != "" {
+		// Force the IP address to be a V4 if possible
+		ipAddr := net.ParseIP(filter.IPAddr)
+		ip := ipAddr.To4()
+		if ip == nil {
+			ip = ipAddr
+		}
+		queryVals = append(queryVals, ip)
 		queryBuilder.WriteString(fmt.Sprintf(`
-  AND f_source_id = $%d`, len(queryVals)))
+%s f_ip_addr = $%d`, wherestr, len(queryVals)))
+		wherestr = "  AND"
 	}
 
-	if method != "" {
-		queryVals = append(queryVals, method)
+	if filter.Source != "" {
+		queryVals = append(queryVals, filter.Source)
 		queryBuilder.WriteString(fmt.Sprintf(`
-  AND f_method = $%d`, len(queryVals)))
+%s f_source = $%d`, wherestr, len(queryVals)))
+		wherestr = "  AND"
+	}
+
+	if filter.Method != "" {
+		queryVals = append(queryVals, filter.Method)
+		queryBuilder.WriteString(fmt.Sprintf(`
+%s f_method = $%d`, wherestr, len(queryVals)))
+		wherestr = "  AND"
+	}
+
+	if filter.From != nil {
+		queryVals = append(queryVals, *filter.From)
+		queryBuilder.WriteString(fmt.Sprintf(`
+%s f_slot >= $%d`, wherestr, len(queryVals)))
+		wherestr = "  AND"
+	}
+
+	if filter.To != nil {
+		queryVals = append(queryVals, *filter.To)
+		queryBuilder.WriteString(fmt.Sprintf(`
+%s f_slot <= $%d`, wherestr, len(queryVals)))
+		// wherestr = "  AND"
 	}
 
 	queryBuilder.WriteString(`
 GROUP BY f_slot
 ORDER BY f_slot`)
+
+	if e := log.Trace(); e.Enabled() {
+		params := make([]string, len(queryVals))
+		for i := range queryVals {
+			params[i] = fmt.Sprintf("%v", queryVals[i])
+		}
+		log.Trace().Str("query", strings.ReplaceAll(queryBuilder.String(), "\n", " ")).Strs("params", params).Msg("SQL query")
+	}
 
 	rows, err := tx.Query(ctx,
 		queryBuilder.String(),
@@ -136,84 +184,10 @@ ORDER BY f_slot`)
 	delays := make([]*probedb.DelayValue, 0)
 	for rows.Next() {
 		delay := &probedb.DelayValue{}
-		err := rows.Scan(&delay.Slot, &delay.DelayMS)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to scan row")
-		}
-		delays = append(delays, delay)
-	}
-	return delays, nil
-}
-
-// MinimumBlockDelays obtains the minimum block delays for a range of slots.
-func (s *Service) MinimumBlockDelays(ctx context.Context,
-	locationID uint16,
-	sourceID uint16,
-	method string,
-	fromSlot uint32,
-	toSlot uint32,
-) (
-	[]*probedb.DelayValue,
-	error,
-) {
-	tx := s.tx(ctx)
-	if tx == nil {
-		ctx, cancel, err := s.BeginTx(ctx)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to begin transaction")
-		}
-		tx = s.tx(ctx)
-		defer cancel()
-	}
-
-	// Build the query.
-	queryBuilder := strings.Builder{}
-	queryVals := make([]interface{}, 2)
-
-	queryVals[0] = fromSlot
-	queryVals[1] = toSlot
-	queryBuilder.WriteString(`
-SELECT f_slot
-      ,MIN(f_delay)
-FROM t_block_delay
-WHERE f_slot >= $1
-  AND f_slot < $2`)
-
-	if locationID != 0 {
-		queryVals = append(queryVals, locationID)
-		queryBuilder.WriteString(fmt.Sprintf(`
-  AND f_location_id = $%d`, len(queryVals)))
-	}
-
-	if sourceID != 0 {
-		queryVals = append(queryVals, sourceID)
-		queryBuilder.WriteString(fmt.Sprintf(`
-  AND f_source_id = $%d`, len(queryVals)))
-	}
-
-	if method != "" {
-		queryVals = append(queryVals, method)
-		queryBuilder.WriteString(fmt.Sprintf(`
-  AND f_method = $%d`, len(queryVals)))
-	}
-
-	queryBuilder.WriteString(`
-GROUP BY f_slot
-ORDER BY f_slot`)
-
-	rows, err := tx.Query(ctx,
-		queryBuilder.String(),
-		queryVals...,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	delays := make([]*probedb.DelayValue, 0)
-	for rows.Next() {
-		delay := &probedb.DelayValue{}
-		err := rows.Scan(&delay.Slot, &delay.DelayMS)
+		err := rows.Scan(
+			&delay.Slot,
+			&delay.DelayMS,
+		)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to scan row")
 		}

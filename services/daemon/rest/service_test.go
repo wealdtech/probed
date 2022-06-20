@@ -1,4 +1,4 @@
-// Copyright © 2021 Weald Technology Limited.
+// Copyright © 2021 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -39,6 +39,7 @@ func TestService(t *testing.T) {
 			params: []restdaemon.Parameter{
 				restdaemon.WithLogLevel(zerolog.Disabled),
 				restdaemon.WithMonitor(nil),
+				restdaemon.WithServerName("server.wealdtech.com"),
 				restdaemon.WithListenAddress(":14734"),
 				restdaemon.WithBlockDelaysSetter(probeDB),
 				restdaemon.WithHeadDelaysSetter(probeDB),
@@ -46,10 +47,22 @@ func TestService(t *testing.T) {
 			err: "problem with parameters: no monitor specified",
 		},
 		{
+			name: "ServerNameMissing",
+			params: []restdaemon.Parameter{
+				restdaemon.WithLogLevel(zerolog.Disabled),
+				restdaemon.WithMonitor(monitor),
+				restdaemon.WithListenAddress(":14734"),
+				restdaemon.WithBlockDelaysSetter(probeDB),
+				restdaemon.WithHeadDelaysSetter(probeDB),
+			},
+			err: "problem with parameters: no server name specified",
+		},
+		{
 			name: "ListenAddressMissing",
 			params: []restdaemon.Parameter{
 				restdaemon.WithLogLevel(zerolog.Disabled),
 				restdaemon.WithMonitor(monitor),
+				restdaemon.WithServerName("server.wealdtech.com"),
 				restdaemon.WithBlockDelaysSetter(probeDB),
 				restdaemon.WithHeadDelaysSetter(probeDB),
 			},
@@ -60,6 +73,7 @@ func TestService(t *testing.T) {
 			params: []restdaemon.Parameter{
 				restdaemon.WithLogLevel(zerolog.Disabled),
 				restdaemon.WithMonitor(monitor),
+				restdaemon.WithServerName("server.wealdtech.com"),
 				restdaemon.WithListenAddress(":14734"),
 				restdaemon.WithHeadDelaysSetter(probeDB),
 			},
@@ -70,6 +84,7 @@ func TestService(t *testing.T) {
 			params: []restdaemon.Parameter{
 				restdaemon.WithLogLevel(zerolog.Disabled),
 				restdaemon.WithMonitor(monitor),
+				restdaemon.WithServerName("server.wealdtech.com"),
 				restdaemon.WithListenAddress(":14734"),
 				restdaemon.WithBlockDelaysSetter(probeDB),
 			},
@@ -80,6 +95,7 @@ func TestService(t *testing.T) {
 			params: []restdaemon.Parameter{
 				restdaemon.WithLogLevel(zerolog.Disabled),
 				restdaemon.WithMonitor(monitor),
+				restdaemon.WithServerName("server.wealdtech.com"),
 				restdaemon.WithListenAddress(":14734"),
 				restdaemon.WithBlockDelaysSetter(probeDB),
 				restdaemon.WithHeadDelaysSetter(probeDB),
