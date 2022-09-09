@@ -29,6 +29,13 @@ func (s *Service) postHeadDelay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if headDelay.DelayMS > 24000 {
+		// Greater than a 2-slot delay, assume it's an old block and ignore.
+		log.Debug().Uint32("delay", headDelay.DelayMS).Msg("Delay too long, ignoring")
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
 	sourceIP, err := sourceIP(r)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to obtain source IP")
