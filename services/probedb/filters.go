@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package probedb defines a probe data store.
 package probedb
 
 import "github.com/attestantio/go-eth2-client/spec/phase0"
@@ -70,4 +71,70 @@ type DelayFilter struct {
 	// Selection is the selection of the delay(s).
 	// The default is SelectionMinimum.
 	Selection Selection
+}
+
+// AggregateAttestationFilter defines a filter for fetching aggregate attestations.
+// Filter elements are ANDed together.
+// Results are always returned in ascending slot/method/IP address/source order.
+type AggregateAttestationFilter struct {
+	// IPAddr is the IP address from which to fetch results.
+	// If empty then there is no IP address filter.
+	IPAddr string
+
+	// Sources are the beacon nodes from which to fetch results.
+	// If empty then there is no source filter.
+	Sources []string
+
+	// Method are the collection methods from which to fetch results.
+	// If empty then there is no method filter.
+	Methods []string
+
+	// From is the slot of the earliest result to fetch.
+	// If nil then there is no earliest slot.
+	From *phase0.Slot
+
+	// To is the slot of the latest result to fetch.
+	// If nil then there is no latest slot.
+	To *phase0.Slot
+
+	// Order is either OrderEarliest, in which case the earliest results
+	// that match the filter are returned, or OrderLatest, in which case the
+	// latest results that match the filter are returned.
+	// The default is OrderEarliest.
+	Order Order
+
+	// Limit is the maximum number of results to return.
+	// If 0 then there is no limit.
+	Limit uint32
+}
+
+// AttestationSummaryFilter defines a filter for fetching attestation summaries.
+// Filter elements are ANDed together.
+// Results are always returned in ascending slot/method/IP address/source order.
+type AttestationSummaryFilter struct {
+	// IPAddr is the IP address from which to fetch data.
+	// If empty then there is no IP address filter.
+	IPAddr string
+
+	// Source is the beacon node source from which to fetch data.
+	// If empty then there is no source filter.
+	Source string
+
+	// Method is the collection method from which to fetch data.
+	// If empty then there is no method filter.
+	Method string
+
+	// From is the slot of the earliest data to fetch.
+	// If nil then there is no earliest slot.
+	From *phase0.Slot
+
+	// To is the slot of the latest data to fetch.
+	// If nil then there is no latest slot.
+	To *phase0.Slot
+
+	// Order is either OrderEarliest, in which case the earliest results
+	// that match the filter are returned, or OrderLatest, in which case the
+	// latest results that match the filter are returned.
+	// The default is OrderEarliest.
+	Order Order
 }

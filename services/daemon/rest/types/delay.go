@@ -11,12 +11,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rest
+package types
 
 import (
 	"encoding/json"
 	"fmt"
-	"net"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -24,7 +23,7 @@ import (
 
 // Delay holds information about a delay.
 type Delay struct {
-	IPAddr  *net.IP
+	// IPAddr  *net.IP
 	Source  string
 	Method  string
 	Slot    uint32
@@ -33,7 +32,7 @@ type Delay struct {
 
 // delayJSON is a raw representation of the struct.
 type delayJSON struct {
-	IPAddr  string `json:"ip_addr,omitempty"`
+	// IPAddr  string `json:"ip_addr,omitempty"`
 	Source  string `json:"source"`
 	Method  string `json:"method"`
 	Slot    string `json:"slot"`
@@ -42,13 +41,13 @@ type delayJSON struct {
 
 // MarshalJSON implements json.Marshaler.
 func (d *Delay) MarshalJSON() ([]byte, error) {
-	ipAddr := ""
-	if d.IPAddr != nil {
-		ipAddr = d.IPAddr.String()
-	}
+	// ipAddr := ""
+	// if d.IPAddr != nil {
+	// 	ipAddr = d.IPAddr.String()
+	// }
 
 	return json.Marshal(&delayJSON{
-		IPAddr:  ipAddr,
+		//  IPAddr:  ipAddr,
 		Source:  d.Source,
 		Method:  d.Method,
 		Slot:    fmt.Sprintf("%d", d.Slot),
@@ -64,13 +63,13 @@ func (d *Delay) UnmarshalJSON(input []byte) error {
 		return err
 	}
 
-	if data.IPAddr != "" {
-		ipAddr := net.ParseIP(data.IPAddr)
-		if ipAddr.To4() != nil {
-			ipAddr = ipAddr.To4()
-		}
-		d.IPAddr = &ipAddr
-	}
+	// if data.IPAddr != "" {
+	// 	ipAddr := net.ParseIP(data.IPAddr)
+	// 	if ipAddr.To4() != nil {
+	// 		ipAddr = ipAddr.To4()
+	// 	}
+	// 	d.IPAddr = &ipAddr
+	// }
 
 	if data.Source == "" {
 		return errors.New("source missing")

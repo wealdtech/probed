@@ -18,11 +18,12 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/wealdtech/probed/services/daemon/rest/types"
 	"github.com/wealdtech/probed/services/probedb"
 )
 
 func (s *Service) postHeadDelay(w http.ResponseWriter, r *http.Request) {
-	var headDelay Delay
+	var headDelay types.Delay
 	if err := json.NewDecoder(r.Body).Decode(&headDelay); err != nil {
 		log.Debug().Err(err).Msg("Supplied with invalid data")
 		w.WriteHeader(http.StatusBadRequest)

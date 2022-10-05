@@ -1,4 +1,4 @@
-// Copyright © 2021 Weald Technology Trading.
+// Copyright © 2021, 2022 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,6 +17,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	// #nosec G108
 	_ "net/http/pprof"
@@ -44,7 +45,7 @@ import (
 )
 
 // ReleaseVersion is the release version for the code.
-var ReleaseVersion = "0.2.1"
+var ReleaseVersion = "0.3.0"
 
 func main() {
 	os.Exit(main2())
@@ -172,7 +173,11 @@ func initProfiling() error {
 		go func() {
 			log.Info().Str("profile_address", profileAddress).Msg("Starting profile server")
 			runtime.SetMutexProfileFraction(1)
-			if err := http.ListenAndServe(profileAddress, nil); err != nil {
+			server := &http.Server{
+				Addr:              profileAddress,
+				ReadHeaderTimeout: 5 * time.Second,
+			}
+			if err := server.ListenAndServe(); err != nil {
 				log.Warn().Str("profile_address", profileAddress).Err(err).Msg("Failed to run profile server")
 			}
 		}()
@@ -202,12 +207,24 @@ func startServices(ctx context.Context, monitor metrics.Service, majordomo major
 		return errors.New("database does not support setting head delay data")
 	}
 
+	aggregateAttestationsSetter, isAggregateAttestationsSetter := probeDB.(probedb.AggregateAttestationsSetter)
+	if !isAggregateAttestationsSetter {
+		return errors.New("database does not support setting aggregate attestation data")
+	}
+
+	attestationSummariesSetter, isAttestationSummariesSetter := probeDB.(probedb.AttestationSummariesSetter)
+	if !isAttestationSummariesSetter {
+		return errors.New("database does not support setting attestation summary data")
+	}
+
 	_, err = restdaemon.New(ctx,
 		restdaemon.WithLogLevel(util.LogLevel("daemon.rest")),
 		restdaemon.WithServerName(viper.GetString("daemon.rest.server-name")),
 		restdaemon.WithListenAddress(viper.GetString("daemon.rest.listen-address")),
 		restdaemon.WithBlockDelaysSetter(blockDelaysSetter),
 		restdaemon.WithHeadDelaysSetter(headDelaysSetter),
+		restdaemon.WithAggregateAttestationsSetter(aggregateAttestationsSetter),
+		restdaemon.WithAttestationSummariesSetter(attestationSummariesSetter),
 	)
 	if err != nil {
 		return errors.Wrap(err, "failed to start REST daemon")

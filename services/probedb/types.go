@@ -13,7 +13,9 @@
 
 package probedb
 
-import "net"
+import (
+	"net"
+)
 
 // Delay holds information about a delay.
 type Delay struct {
@@ -30,9 +32,29 @@ type DelayValue struct {
 	DelayMS uint32
 }
 
-// Attestation holds information about an attestation.
-type Attestation struct {
+// AttestationSummary holds summary information about an attestation.
+type AttestationSummary struct {
+	IPAddr          net.IP
+	Source          string
+	Method          string
 	Slot            uint32
-	Committee       uint16
+	CommitteeIndex  uint16
+	BeaconBlockRoot []byte
+	SourceRoot      []byte
+	TargetRoot      []byte
+	AttesterBuckets [][]byte
+}
+
+// AggregateAttestation holds information about an aggregate attestation.
+type AggregateAttestation struct {
+	IPAddr          net.IP
+	Source          string
+	Method          string
+	Slot            uint32
+	CommitteeIndex  uint16
 	AggregationBits []byte
+	BeaconBlockRoot []byte
+	SourceRoot      []byte
+	TargetRoot      []byte
+	DelayMS         uint32
 }

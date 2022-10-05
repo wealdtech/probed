@@ -1,4 +1,4 @@
-// Copyright © 2021 Weald Technology Trading.
+// Copyright © 2021, 2022 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -17,8 +17,38 @@ import (
 	"context"
 )
 
+// AggregateAttestationsSetter defines functions to create and update aggregate attestations.
+type AggregateAttestationsSetter interface {
+	Service
+
+	// SetAggregateAttestation sets an aggregate attestation.
+	SetAggregateAttestation(ctx context.Context, aggregateAttestation *AggregateAttestation) error
+}
+
+// AggregateAttestationsProvider defines functions to obtain aggregate attestations.
+type AggregateAttestationsProvider interface {
+	// AggregateAttestations obtains the aggregate attestations for a filter.
+	AggregateAttestations(ctx context.Context, filter *AggregateAttestationFilter) ([]*AggregateAttestation, error)
+}
+
+// AttestationSummariesSetter defines functions to create and update attestation summaries.
+type AttestationSummariesSetter interface {
+	Service
+
+	// SetAttestationSummary sets an attestation summary.
+	SetAttestationSummary(ctx context.Context, summary *AttestationSummary) error
+}
+
+// AttestationSummariesProvider defines functions to obtain attestation summaries.
+type AttestationSummariesProvider interface {
+	// AttestationSummaries obtains the attestation summaries for a filter.
+	AttestationSummaries(ctx context.Context, filter *AttestationSummaryFilter) ([]*AttestationSummary, error)
+}
+
 // BlockDelaysSetter defines functions to create and update block delays.
 type BlockDelaysSetter interface {
+	Service
+
 	// SetBlockDelay sets a block delay.
 	SetBlockDelay(ctx context.Context, delay *Delay) error
 }
@@ -31,6 +61,8 @@ type BlockDelaysProvider interface {
 
 // HeadDelaysSetter defines functions to create and update head delays.
 type HeadDelaysSetter interface {
+	Service
+
 	// SetHeadDelay sets a head delay.
 	SetHeadDelay(ctx context.Context, delay *Delay) error
 }
@@ -39,15 +71,6 @@ type HeadDelaysSetter interface {
 type HeadDelaysProvider interface {
 	// HeadDelays obtains the minimum head delays for a range of slots.
 	HeadDelays(ctx context.Context, filter *DelayFilter) ([]*DelayValue, error)
-}
-
-// AttestationsSetter defines functions to create and update attestations.
-type AttestationsSetter interface {
-	// SetAttestations sets multiple attestations.
-	SetAttestations(ctx context.Context, attestations []*Attestation) error
-
-	// SetAttestation sets an attestation.
-	SetAttestation(ctx context.Context, attestation *Attestation) error
 }
 
 // Service defines a minimal probe database service.

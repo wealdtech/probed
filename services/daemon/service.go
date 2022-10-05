@@ -11,6 +11,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package api defines the API for a daemon.
 package api
 
 // Service defines a daemon service.

@@ -1,4 +1,4 @@
-// Copyright © 2021 Weald Technology Trading.
+// Copyright © 2021, 2022 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/mux"
@@ -33,9 +34,11 @@ import (
 
 // Service is the REST daemon service.
 type Service struct {
-	srv               *http.Server
-	blockDelaysSetter probedb.BlockDelaysSetter
-	headDelaysSetter  probedb.HeadDelaysSetter
+	srv                         *http.Server
+	blockDelaysSetter           probedb.BlockDelaysSetter
+	headDelaysSetter            probedb.HeadDelaysSetter
+	aggregateAttestationsSetter probedb.AggregateAttestationsSetter
+	attestationSummariesSetter  probedb.AttestationSummariesSetter
 }
 
 // module-wide log.
@@ -59,8 +62,10 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	}
 
 	s := &Service{
-		blockDelaysSetter: parameters.blockDelaysSetter,
-		headDelaysSetter:  parameters.headDelaysSetter,
+		blockDelaysSetter:           parameters.blockDelaysSetter,
+		headDelaysSetter:            parameters.headDelaysSetter,
+		aggregateAttestationsSetter: parameters.aggregationAttestationsSetter,
+		attestationSummariesSetter:  parameters.attestationSummariesSetter,
 	}
 
 	// Set to release mode to remove debug logging.
@@ -83,10 +88,13 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	router := mux.NewRouter()
 	router.HandleFunc("/v1/blockdelay", s.postBlockDelay).Methods("POST")
 	router.HandleFunc("/v1/headdelay", s.postHeadDelay).Methods("POST")
+	router.HandleFunc("/v1/aggregateattestation", s.postAggregateAttestation).Methods("POST")
+	router.HandleFunc("/v1/attestationsummary", s.postAttestationSummary).Methods("POST")
 
 	s.srv = &http.Server{
-		Addr:    parameters.listenAddress,
-		Handler: router,
+		Addr:              parameters.listenAddress,
+		Handler:           router,
+		ReadHeaderTimeout: 20 * time.Second,
 		TLSConfig: &tls.Config{
 			MinVersion:               tls.VersionTLS13,
 			CurvePreferences:         []tls.CurveID{tls.CurveP521, tls.CurveP384, tls.CurveP256},
@@ -124,7 +132,12 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	// Listen on HTTP port for certificate updates.
 	go func() {
 		log.Trace().Str("listen_address", parameters.listenAddress).Msg("Starting certificate update service")
-		if err := http.ListenAndServe(":http", certManager.HTTPHandler(nil)); err != nil {
+		server := &http.Server{
+			Addr:              ":http",
+			Handler:           certManager.HTTPHandler(nil),
+			ReadHeaderTimeout: 5 * time.Second,
+		}
+		if err := server.ListenAndServe(); err != nil {
 			log.Error().Err(err).Msg("Certificate update service stopped")
 		}
 	}()
@@ -132,7 +145,6 @@ func New(ctx context.Context, params ...Parameter) (*Service, error) {
 	go func() {
 		log.Trace().Str("listen_address", parameters.listenAddress).Msg("Starting daemon")
 		if err := s.srv.ListenAndServeTLS("", ""); err != http.ErrServerClosed {
-			// if err := s.srv.ListenAndServe(); err != http.ErrServerClosed {
 			log.Error().Err(err).Msg("Server shut down unexpectedly")
 		}
 	}()

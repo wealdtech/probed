@@ -11,29 +11,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package rest_test
+package types_test
 
 import (
 	"encoding/json"
-	"net"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/wealdtech/probed/services/daemon/rest"
+	"github.com/wealdtech/probed/services/daemon/rest/types"
 	"gotest.tools/assert"
 )
-
-func ip4Ptr(in string) *net.IP {
-	ip := net.ParseIP(in)
-	ip4 := ip.To4()
-	return &ip4
-}
 
 func TestDelayJSON(t *testing.T) {
 	tests := []struct {
 		name  string
 		input []byte
-		res   *rest.Delay
+		res   *types.Delay
 		err   string
 	}{
 		{
@@ -43,7 +36,7 @@ func TestDelayJSON(t *testing.T) {
 		{
 			name:  "JSONBad",
 			input: []byte("[]"),
-			err:   "json: cannot unmarshal array into Go value of type rest.delayJSON",
+			err:   "json: cannot unmarshal array into Go value of type types.delayJSON",
 		},
 		{
 			name:  "SourceMissing",
@@ -98,18 +91,7 @@ func TestDelayJSON(t *testing.T) {
 		{
 			name:  "Good",
 			input: []byte(`{"source":"client","method":"head event","slot":"123","delay_ms":"12345"}`),
-			res: &rest.Delay{
-				Source:  "client",
-				Method:  "head event",
-				Slot:    123,
-				DelayMS: 12345,
-			},
-		},
-		{
-			name:  "WithIP",
-			input: []byte(`{"ip_addr":"1.2.3.4","source":"client","method":"head event","slot":"123","delay_ms":"12345"}`),
-			res: &rest.Delay{
-				IPAddr:  ip4Ptr("1.2.3.4"),
+			res: &types.Delay{
 				Source:  "client",
 				Method:  "head event",
 				Slot:    123,
@@ -120,7 +102,7 @@ func TestDelayJSON(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var res rest.Delay
+			var res types.Delay
 			err := json.Unmarshal(test.input, &res)
 			if test.err != "" {
 				require.EqualError(t, err, test.err)
@@ -128,7 +110,6 @@ func TestDelayJSON(t *testing.T) {
 				require.NoError(t, err)
 				rt, err := json.Marshal(&res)
 				require.NoError(t, err)
-				require.Equal(t, test.res.IPAddr, res.IPAddr)
 				require.Equal(t, test.res.Source, res.Source)
 				require.Equal(t, test.res.Method, res.Method)
 				require.Equal(t, test.res.Slot, res.Slot)

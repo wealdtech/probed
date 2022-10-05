@@ -1,4 +1,4 @@
-// Copyright © 2021 Weald Technology Trading.
+// Copyright © 2021, 2022 Weald Technology Trading.
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
@@ -25,11 +25,16 @@ type schemaMetadata struct {
 	Version uint64 `json:"version"`
 }
 
-var currentVersion = uint64(1)
+var schemaVersion = uint64(2)
 
 type upgradeFunc func(context.Context, *Service) error
 
-var upgrades = map[uint64][]upgradeFunc{}
+var upgrades = map[uint64][]upgradeFunc{
+	2: {
+		createAggregateAttestations,
+		createAttestationSummaries,
+	},
+}
 
 // Upgrade upgrades the database.
 func (s *Service) Upgrade(ctx context.Context) error {
@@ -55,18 +60,22 @@ func (s *Service) Upgrade(ctx context.Context) error {
 		return errors.Wrap(err, "failed to obtain version")
 	}
 
-	log.Trace().Uint64("current_version", version).Uint64("required_version", currentVersion).Msg("Checking if database upgrade is required")
-	if version == currentVersion {
-		// Nothing to do.
+	if version == schemaVersion {
+		log.Trace().Msg("No database upgrade is required")
 		return nil
 	}
+	if version > schemaVersion {
+		log.Warn().Uint64("version", version).Uint64("expected_version", schemaVersion).Msg("Database schema outdated; please recompile")
+		return nil
+	}
+	log.Trace().Uint64("version", version).Uint64("expected_version", schemaVersion).Msg("Database upgrade required")
 
 	ctx, cancel, err := s.BeginTx(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to begin upgrade transaction")
 	}
 
-	for i := version + 1; i <= currentVersion; i++ {
+	for i := version + 1; i <= schemaVersion; i++ {
 		log.Info().Uint64("target_version", i).Msg("Upgrading database")
 		if upgrade, exists := upgrades[i]; exists {
 			for i, upgradeFunc := range upgrade {
@@ -79,7 +88,7 @@ func (s *Service) Upgrade(ctx context.Context) error {
 		}
 	}
 
-	if err := s.setVersion(ctx, currentVersion); err != nil {
+	if err := s.setVersion(ctx, schemaVersion); err != nil {
 		cancel()
 		return errors.Wrap(err, "failed to set latest schema version")
 	}
@@ -243,6 +252,36 @@ CREATE TABLE t_head_delays (
  ,f_delay   INTEGER NOT NULL
 );
 CREATE UNIQUE INDEX i_head_delays_1 ON t_head_delays(f_ip_addr, f_source, f_method, f_slot);
+
+-- t_aggregate_attestations contains aggregate attestations.
+CREATE TABLE t_aggregate_attestations (
+  f_ip_addr           INET NOT NULL
+ ,f_source            TEXT NOT NULL
+ ,f_method            TEXT NOT NULL
+ ,f_slot              INTEGER NOT NULL
+ ,f_committee_index   INTEGER NOT NULL
+ ,f_aggregation_bits  BYTEA NOT NULL
+ ,f_beacon_block_root BYTEA NOT NULL
+ ,f_source_root       BYTEA NOT NULL
+ ,f_target_root       BYTEA NOT NULL
+  -- f_delay is the recorded delay in milliseconds.
+ ,f_delay             INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX i_aggregate_attestations_1 ON t_aggregate_attestations(f_ip_addr, f_source, f_method, f_slot, f_committee_index, f_aggregation_bits);
+
+-- t_attestation_summaries contains attestation summaries.
+CREATE TABLE t_attestation_summaries(
+  f_ip_addr           INET NOT NULL
+ ,f_source            TEXT NOT NULL
+ ,f_method            TEXT NOT NULL
+ ,f_slot              INTEGER NOT NULL
+ ,f_committee_index   INTEGER NOT NULL
+ ,f_beacon_block_root BYTEA NOT NULL
+ ,f_source_root       BYTEA NOT NULL
+ ,f_target_root       BYTEA NOT NULL
+ ,f_attester_buckets  BYTEA[] NOT NULL
+);
+CREATE UNIQUE INDEX i_attestation_summaries_1 ON t_attestation_summaries(f_ip_addr, f_source, f_method, f_slot, f_committee_index, f_beacon_block_root, f_source_root, f_target_root);
 `); err != nil {
 		cancel()
 		return errors.Wrap(err, "failed to create initial tables")
@@ -251,6 +290,66 @@ CREATE UNIQUE INDEX i_head_delays_1 ON t_head_delays(f_ip_addr, f_source, f_meth
 	if err := s.CommitTx(ctx); err != nil {
 		cancel()
 		return errors.Wrap(err, "failed to commit initial tables transaction")
+	}
+
+	return nil
+}
+
+// createAggregateAttestations creates the t_aggregate_attestations table.
+func createAggregateAttestations(ctx context.Context, s *Service) error {
+	tx := s.tx(ctx)
+	if tx == nil {
+		return ErrNoTransaction
+	}
+
+	if _, err := tx.Exec(ctx, `
+CREATE TABLE t_aggregate_attestations (
+  f_ip_addr           INET NOT NULL
+ ,f_source            TEXT NOT NULL
+ ,f_method            TEXT NOT NULL
+ ,f_slot              INTEGER NOT NULL
+ ,f_committee_index   INTEGER NOT NULL
+ ,f_aggregation_bits  BYTEA NOT NULL
+ ,f_beacon_block_root BYTEA NOT NULL
+ ,f_source_root       BYTEA NOT NULL
+ ,f_target_root       BYTEA NOT NULL
+  -- f_delay is the recorded delay in milliseconds.
+ ,f_delay             INTEGER NOT NULL
+)`); err != nil {
+		return errors.Wrap(err, "failed to create t_aggregate_attestations")
+	}
+
+	if _, err := tx.Exec(ctx, `CREATE UNIQUE INDEX i_aggregate_attestations_1 ON t_aggregate_attestations(f_ip_addr, f_source, f_method, f_slot, f_committee_index, f_aggregation_bits)`); err != nil {
+		return errors.Wrap(err, "failed to create i_aggregate_attestations_1")
+	}
+
+	return nil
+}
+
+// createAttestationSummaries creates the t_attestation_summaries table.
+func createAttestationSummaries(ctx context.Context, s *Service) error {
+	tx := s.tx(ctx)
+	if tx == nil {
+		return ErrNoTransaction
+	}
+
+	if _, err := tx.Exec(ctx, `
+CREATE TABLE t_attestation_summaries(
+  f_ip_addr           INET NOT NULL
+ ,f_source            TEXT NOT NULL
+ ,f_method            TEXT NOT NULL
+ ,f_slot              INTEGER NOT NULL
+ ,f_committee_index   INTEGER NOT NULL
+ ,f_beacon_block_root BYTEA NOT NULL
+ ,f_source_root       BYTEA NOT NULL
+ ,f_target_root       BYTEA NOT NULL
+ ,f_attester_buckets  BYTEA[] NOT NULL
+)`); err != nil {
+		return errors.Wrap(err, "failed to create t_attestation_summaries")
+	}
+
+	if _, err := tx.Exec(ctx, `CREATE UNIQUE INDEX i_attestation_summaries_1 ON t_attestation_summaries(f_ip_addr, f_source, f_method, f_slot, f_committee_index, f_beacon_block_root, f_source_root, f_target_root)`); err != nil {
+		return errors.Wrap(err, "failed to create i_attestation_summaries_1")
 	}
 
 	return nil

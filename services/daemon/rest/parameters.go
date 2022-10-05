@@ -23,12 +23,14 @@ import (
 )
 
 type parameters struct {
-	logLevel          zerolog.Level
-	monitor           metrics.Service
-	serverName        string
-	listenAddress     string
-	blockDelaysSetter probedb.BlockDelaysSetter
-	headDelaysSetter  probedb.HeadDelaysSetter
+	logLevel                      zerolog.Level
+	monitor                       metrics.Service
+	serverName                    string
+	listenAddress                 string
+	blockDelaysSetter             probedb.BlockDelaysSetter
+	headDelaysSetter              probedb.HeadDelaysSetter
+	aggregationAttestationsSetter probedb.AggregateAttestationsSetter
+	attestationSummariesSetter    probedb.AttestationSummariesSetter
 }
 
 // Parameter is the interface for service parameters.
@@ -84,6 +86,20 @@ func WithHeadDelaysSetter(setter probedb.HeadDelaysSetter) Parameter {
 	})
 }
 
+// WithAggregateAttestationsSetter sets the aggregate attestations setter for this module.
+func WithAggregateAttestationsSetter(setter probedb.AggregateAttestationsSetter) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.aggregationAttestationsSetter = setter
+	})
+}
+
+// WithAttestationSummariesSetter sets the attestation summaries setter for this module.
+func WithAttestationSummariesSetter(setter probedb.AttestationSummariesSetter) Parameter {
+	return parameterFunc(func(p *parameters) {
+		p.attestationSummariesSetter = setter
+	})
+}
+
 // parseAndCheckParameters parses and checks parameters to ensure that mandatory parameters are present and correct.
 func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	parameters := parameters{
@@ -110,6 +126,12 @@ func parseAndCheckParameters(params ...Parameter) (*parameters, error) {
 	}
 	if parameters.headDelaysSetter == nil {
 		return nil, errors.New("no head delays setter specified")
+	}
+	if parameters.aggregationAttestationsSetter == nil {
+		return nil, errors.New("no aggregate attestations setter specified")
+	}
+	if parameters.attestationSummariesSetter == nil {
+		return nil, errors.New("no attestation summaries setter specified")
 	}
 
 	return &parameters, nil
