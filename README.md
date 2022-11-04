@@ -38,5 +38,5 @@ docker pull wealdtech/probed
 `probed` is a standard Go binary which can be installed with:
 
 ```sh
-go get github.com/wealdtech/probed
+go install github.com/wealdtech/probed@latest
 ```
