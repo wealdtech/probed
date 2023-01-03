@@ -39,6 +39,8 @@ func TestSetHeadDelay(t *testing.T) {
 		WithListenAddress(":14734"),
 		WithBlockDelaysSetter(probeDB),
 		WithHeadDelaysSetter(probeDB),
+		WithAggregateAttestationsSetter(probeDB),
+		WithAttestationSummariesSetter(probeDB),
 	)
 	require.NoError(t, err)
 
@@ -50,6 +52,8 @@ func TestSetHeadDelay(t *testing.T) {
 		WithListenAddress(":14735"),
 		WithBlockDelaysSetter(erroringProbeDB),
 		WithHeadDelaysSetter(erroringProbeDB),
+		WithAggregateAttestationsSetter(erroringProbeDB),
+		WithAttestationSummariesSetter(erroringProbeDB),
 	)
 	require.NoError(t, err)
 

@@ -37,6 +37,16 @@ func (s *Service) SetHeadDelay(ctx context.Context, delay *probedb.Delay) error 
 	return nil
 }
 
+// SetAggregateAttestation sets an aggregate attestation.
+func (s *Service) SetAggregateAttestation(ctx context.Context, aggregateAttestation *probedb.AggregateAttestation) error {
+	return nil
+}
+
+// SetAttestationSummary sets an attestation summary.
+func (s *Service) SetAttestationSummary(ctx context.Context, summary *probedb.AttestationSummary) error {
+	return nil
+}
+
 // BeginTx begins a transaction.
 func (s *Service) BeginTx(ctx context.Context) (context.Context, context.CancelFunc, error) {
 	return nil, nil, nil

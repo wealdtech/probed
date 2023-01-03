@@ -39,6 +39,16 @@ func (s *ErroringService) SetHeadDelay(ctx context.Context, delay *probedb.Delay
 	return errors.New("mock")
 }
 
+// SetAggregateAttestation sets an aggregate attestation.
+func (s *ErroringService) SetAggregateAttestation(ctx context.Context, aggregateAttestation *probedb.AggregateAttestation) error {
+	return errors.New("mock")
+}
+
+// SetAttestationSummary sets an attestation summary.
+func (s *ErroringService) SetAttestationSummary(ctx context.Context, summary *probedb.AttestationSummary) error {
+	return errors.New("mock")
+}
+
 // BeginTx begins a transaction.
 func (s *ErroringService) BeginTx(ctx context.Context) (context.Context, context.CancelFunc, error) {
 	return nil, nil, errors.New("mock")
