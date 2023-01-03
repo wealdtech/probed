@@ -30,8 +30,10 @@ const (
 type Selection uint8
 
 const (
+	// SelectionAll fetches all delays.
+	SelectionAll Selection = iota
 	// SelectionMinimum fetches the minimum delay.
-	SelectionMinimum Selection = iota
+	SelectionMinimum
 	// SelectionMaximum fetches the maximum delay.
 	SelectionMaximum
 	// SelectionMedian fetches the median delay.
@@ -46,13 +48,13 @@ type DelayFilter struct {
 	// If empty then there is no IP address filter.
 	IPAddr string
 
-	// Source is the beacon node source from which to fetch delays.
+	// Sources are the beacon nodes from which to fetch results.
 	// If empty then there is no source filter.
-	Source string
+	Sources []string
 
-	// Method is the collection method from which to fetch delays.
+	// Methods are the collection methods from which to fetch results.
 	// If empty then there is no method filter.
-	Method string
+	Methods []string
 
 	// From is the slot of the earliest delay to fetch.
 	// If nil then there is no earliest slot.
@@ -85,7 +87,7 @@ type AggregateAttestationFilter struct {
 	// If empty then there is no source filter.
 	Sources []string
 
-	// Method are the collection methods from which to fetch results.
+	// Methods are the collection methods from which to fetch results.
 	// If empty then there is no method filter.
 	Methods []string
 
@@ -116,13 +118,13 @@ type AttestationSummaryFilter struct {
 	// If empty then there is no IP address filter.
 	IPAddr string
 
-	// Source is the beacon node source from which to fetch data.
+	// Sources are the beacon nodes from which to fetch results.
 	// If empty then there is no source filter.
-	Source string
+	Sources []string
 
-	// Method is the collection method from which to fetch data.
+	// Methods are the collection methods from which to fetch results.
 	// If empty then there is no method filter.
-	Method string
+	Methods []string
 
 	// From is the slot of the earliest data to fetch.
 	// If nil then there is no earliest slot.
@@ -137,4 +139,8 @@ type AttestationSummaryFilter struct {
 	// latest results that match the filter are returned.
 	// The default is OrderEarliest.
 	Order Order
+
+	// Limit is the maximum number of results to return.
+	// If 0 then there is no limit.
+	Limit uint32
 }

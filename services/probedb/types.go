@@ -26,12 +26,6 @@ type Delay struct {
 	DelayMS uint32
 }
 
-// DelayValue holds a single delay value.
-type DelayValue struct {
-	Slot    uint32
-	DelayMS uint32
-}
-
 // AttestationSummary holds summary information about an attestation.
 type AttestationSummary struct {
 	IPAddr          net.IP
@@ -42,6 +36,9 @@ type AttestationSummary struct {
 	BeaconBlockRoot []byte
 	SourceRoot      []byte
 	TargetRoot      []byte
+	// AttesterBuckets contains the information about when specific indices
+	// were first seen.
+	// This is a raw representation of a github.com/prysmaticlabs/go-bitfield.Bitlist
 	AttesterBuckets [][]byte
 }
 

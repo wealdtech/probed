@@ -99,12 +99,16 @@ func TestBlockDelays(t *testing.T) {
 	tests := []struct {
 		name   string
 		filter *probedb.DelayFilter
-		res    []*probedb.DelayValue
+		res    []*probedb.Delay
 	}{
 		{
-			name:   "Default",
-			filter: &probedb.DelayFilter{},
-			res: []*probedb.DelayValue{
+			name: "Default",
+			filter: &probedb.DelayFilter{
+				Selection: probedb.SelectionMinimum,
+				From:      slotPtr(12345),
+				To:        slotPtr(12346),
+			},
+			res: []*probedb.Delay{
 				{Slot: 12345, DelayMS: 1123},
 				{Slot: 12346, DelayMS: 2123},
 			},
@@ -112,28 +116,31 @@ func TestBlockDelays(t *testing.T) {
 		{
 			name: "SingleSlot",
 			filter: &probedb.DelayFilter{
-				From: slotPtr(12345),
-				To:   slotPtr(12345),
+				Selection: probedb.SelectionMinimum,
+				From:      slotPtr(12345),
+				To:        slotPtr(12345),
 			},
-			res: []*probedb.DelayValue{
+			res: []*probedb.Delay{
 				{Slot: 12345, DelayMS: 1123},
 			},
 		},
 		{
 			name: "MinSlot",
 			filter: &probedb.DelayFilter{
-				From: slotPtr(12346),
+				Selection: probedb.SelectionMinimum,
+				From:      slotPtr(12346),
 			},
-			res: []*probedb.DelayValue{
+			res: []*probedb.Delay{
 				{Slot: 12346, DelayMS: 2123},
 			},
 		},
 		{
 			name: "MaxSlot",
 			filter: &probedb.DelayFilter{
-				To: slotPtr(12345),
+				Selection: probedb.SelectionMinimum,
+				To:        slotPtr(12345),
 			},
-			res: []*probedb.DelayValue{
+			res: []*probedb.Delay{
 				{Slot: 12345, DelayMS: 1123},
 			},
 		},
@@ -142,7 +149,7 @@ func TestBlockDelays(t *testing.T) {
 			filter: &probedb.DelayFilter{
 				Selection: probedb.SelectionMedian,
 			},
-			res: []*probedb.DelayValue{
+			res: []*probedb.Delay{
 				{Slot: 12345, DelayMS: 1400},
 				{Slot: 12346, DelayMS: 2400},
 			},
@@ -152,7 +159,7 @@ func TestBlockDelays(t *testing.T) {
 			filter: &probedb.DelayFilter{
 				Selection: probedb.SelectionMaximum,
 			},
-			res: []*probedb.DelayValue{
+			res: []*probedb.Delay{
 				{Slot: 12345, DelayMS: 1678},
 				{Slot: 12346, DelayMS: 2678},
 			},
@@ -160,9 +167,10 @@ func TestBlockDelays(t *testing.T) {
 		{
 			name: "IPAddrFilter",
 			filter: &probedb.DelayFilter{
-				IPAddr: "2.3.4.5",
+				Selection: probedb.SelectionMinimum,
+				IPAddr:    "2.3.4.5",
 			},
-			res: []*probedb.DelayValue{
+			res: []*probedb.Delay{
 				{Slot: 12345, DelayMS: 1456},
 				{Slot: 12346, DelayMS: 2456},
 			},
@@ -170,9 +178,10 @@ func TestBlockDelays(t *testing.T) {
 		{
 			name: "SourceFilter",
 			filter: &probedb.DelayFilter{
-				Source: "Source 2",
+				Selection: probedb.SelectionMinimum,
+				Sources:   []string{"Source 2"},
 			},
-			res: []*probedb.DelayValue{
+			res: []*probedb.Delay{
 				{Slot: 12345, DelayMS: 1234},
 				{Slot: 12346, DelayMS: 2234},
 			},
@@ -180,9 +189,10 @@ func TestBlockDelays(t *testing.T) {
 		{
 			name: "MethodFilter",
 			filter: &probedb.DelayFilter{
-				Method: "Method 2",
+				Selection: probedb.SelectionMinimum,
+				Methods:   []string{"Method 2"},
 			},
-			res: []*probedb.DelayValue{
+			res: []*probedb.Delay{
 				{Slot: 12345, DelayMS: 1456},
 				{Slot: 12346, DelayMS: 2456},
 			},

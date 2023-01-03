@@ -229,7 +229,7 @@ CREATE TABLE t_metadata (
  ,f_value JSONB NOT NULL
 );
 CREATE UNIQUE INDEX i_metadata_1 ON t_metadata(f_key);
-INSERT INTO t_metadata VALUES('schema', '{"version": 1}');
+INSERT INTO t_metadata VALUES('schema', '{"version": 2}');
 
 -- t_block_delays contains block delay metrics.
 CREATE TABLE t_block_delays (

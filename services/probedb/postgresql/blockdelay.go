@@ -80,7 +80,7 @@ func (s *Service) BlockDelays(
 	ctx context.Context,
 	filter *probedb.DelayFilter,
 ) (
-	[]*probedb.DelayValue,
+	[]*probedb.Delay,
 	error,
 ) {
 	tx := s.tx(ctx)
@@ -97,19 +97,26 @@ func (s *Service) BlockDelays(
 	queryBuilder := strings.Builder{}
 	queryVals := make([]interface{}, 0)
 
-	queryBuilder.WriteString(`
-SELECT f_slot`)
-
 	switch filter.Selection {
 	case probedb.SelectionMinimum:
 		queryBuilder.WriteString(`
+SELECT f_slot
       ,MIN(f_delay)`)
 	case probedb.SelectionMaximum:
 		queryBuilder.WriteString(`
+SELECT f_slot
       ,MAX(f_delay)`)
 	case probedb.SelectionMedian:
 		queryBuilder.WriteString(`
+SELECT f_slot
       ,(PERCENTILE_CONT(0.5) WITHIN GROUP(ORDER BY f_delay))::INT`)
+	case probedb.SelectionAll:
+		queryBuilder.WriteString(`
+SELECT f_ip_addr
+      ,f_source
+      ,f_method
+      ,f_slot
+      ,f_delay`)
 	default:
 		return nil, errors.New("unhandled selection criteria")
 	}
@@ -117,7 +124,7 @@ SELECT f_slot`)
 	queryBuilder.WriteString(`
 FROM t_block_delays`)
 
-	wherestr := "WHERE"
+	conditions := make([]string, 0)
 
 	if filter.IPAddr != "" {
 		// Force the IP address to be a V4 if possible
@@ -127,42 +134,46 @@ FROM t_block_delays`)
 			ip = ipAddr
 		}
 		queryVals = append(queryVals, ip)
-		queryBuilder.WriteString(fmt.Sprintf(`
-%s f_ip_addr = $%d`, wherestr, len(queryVals)))
-		wherestr = "  AND"
+		conditions = append(conditions, fmt.Sprintf(`f_ip_addr = $%d`, len(queryVals)))
 	}
 
-	if filter.Source != "" {
-		queryVals = append(queryVals, filter.Source)
-		queryBuilder.WriteString(fmt.Sprintf(`
-%s f_source = $%d`, wherestr, len(queryVals)))
-		wherestr = "  AND"
+	if len(filter.Sources) > 0 {
+		queryVals = append(queryVals, filter.Sources)
+		conditions = append(conditions, fmt.Sprintf(`f_source = ANY($%d)`, len(queryVals)))
 	}
 
-	if filter.Method != "" {
-		queryVals = append(queryVals, filter.Method)
-		queryBuilder.WriteString(fmt.Sprintf(`
-%s f_method = $%d`, wherestr, len(queryVals)))
-		wherestr = "  AND"
+	if len(filter.Methods) > 0 {
+		queryVals = append(queryVals, filter.Methods)
+		conditions = append(conditions, fmt.Sprintf(`f_method = ANY($%d)`, len(queryVals)))
 	}
 
 	if filter.From != nil {
 		queryVals = append(queryVals, *filter.From)
-		queryBuilder.WriteString(fmt.Sprintf(`
-%s f_slot >= $%d`, wherestr, len(queryVals)))
-		wherestr = "  AND"
+		conditions = append(conditions, fmt.Sprintf(`f_slot >= $%d`, len(queryVals)))
 	}
 
 	if filter.To != nil {
 		queryVals = append(queryVals, *filter.To)
-		queryBuilder.WriteString(fmt.Sprintf(`
-%s f_slot <= $%d`, wherestr, len(queryVals)))
-		// wherestr = "  AND"
+		conditions = append(conditions, fmt.Sprintf(`f_slot <= $%d`, len(queryVals)))
 	}
 
-	queryBuilder.WriteString(`
+	if len(conditions) > 0 {
+		queryBuilder.WriteString("\nWHERE ")
+		queryBuilder.WriteString(strings.Join(conditions, "\n  AND "))
+	}
+
+	if filter.Selection == probedb.SelectionAll {
+		queryBuilder.WriteString(`
+ORDER BY f_slot
+        ,f_method
+        ,f_ip_addr
+        ,f_source`)
+	} else {
+		queryBuilder.WriteString(`
 GROUP BY f_slot
-ORDER BY f_slot`)
+ORDER BY f_slot
+`)
+	}
 
 	if e := log.Trace(); e.Enabled() {
 		params := make([]string, len(queryVals))
@@ -181,15 +192,31 @@ ORDER BY f_slot`)
 	}
 	defer rows.Close()
 
-	delays := make([]*probedb.DelayValue, 0)
+	delays := make([]*probedb.Delay, 0)
 	for rows.Next() {
-		delay := &probedb.DelayValue{}
-		err := rows.Scan(
-			&delay.Slot,
-			&delay.DelayMS,
-		)
+		delay := &probedb.Delay{}
+		if filter.Selection == probedb.SelectionAll {
+			err = rows.Scan(
+				&delay.IPAddr,
+				&delay.Source,
+				&delay.Method,
+				&delay.Slot,
+				&delay.DelayMS,
+			)
+		} else {
+			err = rows.Scan(
+				&delay.Slot,
+				&delay.DelayMS,
+			)
+		}
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to scan row")
+		}
+		if len(delay.IPAddr) > 0 {
+			ip := delay.IPAddr.To4()
+			if ip != nil {
+				delay.IPAddr = ip
+			}
 		}
 		delays = append(delays, delay)
 	}

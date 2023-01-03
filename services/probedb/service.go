@@ -56,7 +56,7 @@ type BlockDelaysSetter interface {
 // BlockDelaysProvider defines functions to obtain block delays.
 type BlockDelaysProvider interface {
 	// BlockDelays obtains the block delays for a range of slots.
-	BlockDelays(ctx context.Context, filter *DelayFilter) ([]*DelayValue, error)
+	BlockDelays(ctx context.Context, filter *DelayFilter) ([]*Delay, error)
 }
 
 // HeadDelaysSetter defines functions to create and update head delays.
@@ -70,7 +70,7 @@ type HeadDelaysSetter interface {
 // HeadDelaysProvider defines functions to obtain head delays.
 type HeadDelaysProvider interface {
 	// HeadDelays obtains the minimum head delays for a range of slots.
-	HeadDelays(ctx context.Context, filter *DelayFilter) ([]*DelayValue, error)
+	HeadDelays(ctx context.Context, filter *DelayFilter) ([]*Delay, error)
 }
 
 // Service defines a minimal probe database service.
