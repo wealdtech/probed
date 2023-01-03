@@ -45,7 +45,7 @@ func registerPrometheusMetrics(ctx context.Context) error {
 		Namespace: metricsNamespace,
 		Name:      "requests_total",
 		Help:      "Requests",
-	}, []string{"result"})
+	}, []string{"request", "result"})
 	if err := prometheus.Register(requests); err != nil {
 		return errors.Wrap(err, "failed to register requests_total")
 	}
@@ -53,8 +53,8 @@ func registerPrometheusMetrics(ctx context.Context) error {
 	return nil
 }
 
-func requestHandled(result string) {
+func requestHandled(request string, result string) {
 	if requests != nil {
-		requests.WithLabelValues(result).Inc()
+		requests.WithLabelValues(request, result).Inc()
 	}
 }

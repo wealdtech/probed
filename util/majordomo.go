@@ -54,10 +54,14 @@ func InitMajordomo(ctx context.Context) (majordomo.Service, error) {
 		return nil, errors.Wrap(err, "failed to register file confidant")
 	}
 
-	if viper.GetString("majordomo.gsm.credentials") != "" {
+	if viper.GetString("majordomo.gsm.project") != "" {
+		var gsmCredentialsPath string
+		if viper.GetString("majordomo.gsm.credentials") != "" {
+			gsmCredentialsPath = ResolvePath(viper.GetString("majordomo.gsm.credentials"))
+		}
 		gsmConfidant, err := gsmconfidant.New(ctx,
 			gsmconfidant.WithLogLevel(LogLevel(viper.GetString("majordomo.gsm.log-level"))),
-			gsmconfidant.WithCredentialsPath(ResolvePath(viper.GetString("majordomo.gsm.credentials"))),
+			gsmconfidant.WithCredentialsPath(gsmCredentialsPath),
 			gsmconfidant.WithProject(viper.GetString("majordomo.gsm.project")),
 		)
 		if err != nil {

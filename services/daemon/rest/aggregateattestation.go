@@ -28,6 +28,7 @@ func (s *Service) postAggregateAttestation(w http.ResponseWriter, r *http.Reques
 	if err := json.NewDecoder(r.Body).Decode(&aggregateAttestation); err != nil {
 		log.Debug().Err(err).Msg("Supplied with invalid data")
 		w.WriteHeader(http.StatusBadRequest)
+		requestHandled("aggregate attestation", "failed")
 		return
 	}
 
@@ -35,6 +36,7 @@ func (s *Service) postAggregateAttestation(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to obtain source IP")
 		w.WriteHeader(http.StatusInternalServerError)
+		requestHandled("aggregate attestation", "failed")
 		return
 	}
 
@@ -52,6 +54,7 @@ func (s *Service) postAggregateAttestation(w http.ResponseWriter, r *http.Reques
 	}); err != nil {
 		log.Warn().Err(err).Msg("Failed to set aggregate attestation")
 		w.WriteHeader(http.StatusInternalServerError)
+		requestHandled("aggregate attestation", "failed")
 		return
 	}
 
@@ -63,4 +66,5 @@ func (s *Service) postAggregateAttestation(w http.ResponseWriter, r *http.Reques
 	//		Uint32("delay_ms", blockDelay.DelayMS).
 	//		Msg("Metric accepted")
 	w.WriteHeader(http.StatusCreated)
+	requestHandled("aggregate attestation", "succeeded")
 }

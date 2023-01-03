@@ -27,6 +27,7 @@ func (s *Service) postHeadDelay(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&headDelay); err != nil {
 		log.Debug().Err(err).Msg("Supplied with invalid data")
 		w.WriteHeader(http.StatusBadRequest)
+		requestHandled("head delay", "failed")
 		return
 	}
 
@@ -34,6 +35,7 @@ func (s *Service) postHeadDelay(w http.ResponseWriter, r *http.Request) {
 		// Greater than a 2-slot delay, assume it's an old block and ignore.
 		log.Debug().Uint32("delay", headDelay.DelayMS).Msg("Delay too long, ignoring")
 		w.WriteHeader(http.StatusNoContent)
+		requestHandled("head delay", "failed")
 		return
 	}
 
@@ -41,6 +43,7 @@ func (s *Service) postHeadDelay(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to obtain source IP")
 		w.WriteHeader(http.StatusInternalServerError)
+		requestHandled("head delay", "failed")
 		return
 	}
 
@@ -53,6 +56,7 @@ func (s *Service) postHeadDelay(w http.ResponseWriter, r *http.Request) {
 	}); err != nil {
 		log.Warn().Err(err).Msg("Failed to set head delay")
 		w.WriteHeader(http.StatusInternalServerError)
+		requestHandled("head delay", "failed")
 		return
 	}
 
@@ -64,4 +68,6 @@ func (s *Service) postHeadDelay(w http.ResponseWriter, r *http.Request) {
 		Uint32("delay_ms", headDelay.DelayMS).
 		Msg("Metric accepted")
 	w.WriteHeader(http.StatusCreated)
+
+	requestHandled("head delay", "succeeded")
 }
