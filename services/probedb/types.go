@@ -38,7 +38,7 @@ type AttestationSummary struct {
 	TargetRoot      []byte
 	// AttesterBuckets contains the information about when specific indices
 	// were first seen.
-	// This is a raw representation of a github.com/prysmaticlabs/go-bitfield.Bitlist
+	// This is a raw representation of a github.com/OffchainLabs/go-bitfield.Bitlist
 	AttesterBuckets [][]byte
 }
 

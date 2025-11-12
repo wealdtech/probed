@@ -20,8 +20,8 @@ import (
 	"strconv"
 	"strings"
 
+	bitfield "github.com/OffchainLabs/go-bitfield"
 	"github.com/pkg/errors"
-	bitfield "github.com/prysmaticlabs/go-bitfield"
 )
 
 // AttestationSummary holds summary information about attestations with a particular vote.
